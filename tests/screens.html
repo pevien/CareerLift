@@ -9,6 +9,7 @@ f.style.width = W + "px"; f.style.height = (W < 600 ? 844 : 900) + "px";
 
 const SEED = `
 document.documentElement.dataset.theme = "dark";
+S.settings.apiKey = "AIza-demo-key";
 const now = Date.now(), H = 3600e3;
 cardIds("sense").slice(0,4).forEach((id,i) => S.cards[id] = {i:2+i, n:2, due: now + (i+1)*86400e3});
 cardIds("metrics").slice(0,3).forEach(id => S.cards[id] = {i:1, n:1, due: now - H});
@@ -39,6 +40,7 @@ const STATES = {
   "k02-topic-lessons": `go("topic",{topic:"sense",tab:"lessons"})`,
   "k03-topic-cards": `go("topic",{topic:"sense",tab:"cards"})`,
   "k04-topic-practice": `go("topic",{topic:"sense",tab:"practice"})`,
+  "k04b-practice-key-required": `S.settings.apiKey = ""; go("topic",{topic:"sense",tab:"practice"})`,
   "k05-topic-quiz": `go("topic",{topic:"ai",tab:"quiz"})`,
   "k06-lesson": `go("lesson",{id:lessonsOf("sense")[0].id})`,
   "k07-lesson-ask-ai": `go("lesson",{id:lessonsOf("sense")[0].id}); LA = {id: lessonsOf("sense")[0].id, q:"Người phỏng vấn sẽ hỏi vặn phần này thế nào?", text:"Họ thường hỏi vặn ở bước chọn người dùng: vì sao chọn nhóm này mà không phải nhóm khác, quy mô nhóm đó lớn cỡ nào. Hãy chuẩn bị một lý do gắn với mục tiêu đã làm rõ, ví dụ nhóm con cháu đặt hộ chiếm phần lớn lượt đặt và dễ tiếp cận qua app.", status:"done", err:""}; render()`,
@@ -56,6 +58,7 @@ const STATES = {
   "k19-quiz": `startLearnQuiz("ai", bankQuiz(), "bank"); QZ.answers = {0:0, 1:2}; QZ.idx = 2; QZ.start = Date.now() - 140e3; render()`,
   "k20-quiz-result": `startLearnQuiz("ai", bankQuiz(), "bank"); QZ.questions.forEach((q,i) => QZ.answers[i] = i % 3 ? q.a : (q.a + 1) % 4); submitQuiz(); render()`,
   // Phỏng vấn thử
+  "i00-key-required": `S.settings.apiKey = ""; go("interview")`,
   "i01-setup": `go("interview")`,
   "i02-setup-full-loop": `SU.mode = "loop"; SU.loop = null; go("interview")`,
   "i03-jd-form": `editingTarget = "new"; go("interview")`,
@@ -72,7 +75,7 @@ const STATES = {
   "i14-report-single-round": `go("report",{id:"r1"})`,
   "i15-report-multi-round": `go("report",{id:"r2"})`,
   // Cài đặt
-  "s01-settings": `go("settings")`,
+  "s01-settings": `S.settings.apiKey = ""; go("settings")`,
   "s02-settings-key-saved": `S.settings.apiKey = "AIza-demo-key"; go("settings")`,
   "s03-settings-edit-goal": `editingTarget = "general"; go("settings")`,
   "s04-settings-drive-on": `localStorage.setItem(GD_CID_LS, "1234-abc.apps.googleusercontent.com"); localStorage.setItem(GD_ON_LS, "1"); GD.last = Date.now() - 600e3; S.settings.apiKey = "AIza-demo-key"; go("settings")`,

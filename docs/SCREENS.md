@@ -8,8 +8,8 @@ Tài liệu này liệt kê mọi màn hình và trạng thái giao diện của
 
 ## Mục lục
 
-- [1. Kiến thức](#1-kiến-thức) (20 trạng thái)
-- [2. Phỏng vấn thử](#2-phỏng-vấn-thử) (15 trạng thái)
+- [1. Kiến thức](#1-kiến-thức) (21 trạng thái)
+- [2. Phỏng vấn thử](#2-phỏng-vấn-thử) (16 trạng thái)
 - [3. Cài đặt](#3-cài-đặt) (4 trạng thái)
 - [Chụp lại ảnh](#chụp-lại-ảnh)
 
@@ -23,6 +23,7 @@ Tài liệu này liệt kê mọi màn hình và trạng thái giao diện của
 | K02 | Chủ đề: tab Bài học | `#/topic/{id}/lessons` | Danh sách bài (đã học có ✓, bài AI tạo có nhãn), nút Thêm bài học bằng AI |
 | K03 | Chủ đề: tab Thẻ ghi nhớ | `#/topic/{id}/cards` | Số thẻ đến hạn, nút Ôn N thẻ và Ôn lại toàn bộ, danh sách thẻ với lịch ôn |
 | K04 | Chủ đề: tab Luyện trả lời | `#/topic/{id}/practice` | Danh sách câu hỏi kèm điểm cao nhất, nút Tạo câu hỏi mới bằng AI |
+| K04b | Luyện trả lời: chưa có API key | `#/topic/{id}/practice` | Chỉ hiện khung yêu cầu nhập Gemini API key; danh sách câu hỏi hiện sau khi lưu key. Trang luyện một câu cũng vậy |
 | K05 | Chủ đề: tab Trắc nghiệm | `#/topic/{id}/quiz` | Giới thiệu bài test, lịch sử điểm, nút làm bài và tạo đề bằng AI |
 | K06 | Đọc bài học | `#/lesson/{id}` | Nội dung bài, ô hỏi AI, nút đánh dấu đã học và bài tiếp theo |
 | K07 | Đọc bài học: đã hỏi AI | `#/lesson/{id}` | Câu trả lời của AI cho câu hỏi về bài |
@@ -59,6 +60,11 @@ Tài liệu này liệt kê mọi màn hình và trạng thái giao diện của
 | Desktop | Mobile |
 |---|---|
 | <img src="screens/k04-topic-practice-desktop.png" width="640"> | <img src="screens/k04-topic-practice-mobile.png" width="240"> |
+
+### K04b. Luyện trả lời: chưa có API key
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/k04b-practice-key-required-desktop.png" width="640"> | <img src="screens/k04b-practice-key-required-mobile.png" width="240"> |
 
 ### K05. Chủ đề: tab Trắc nghiệm
 | Desktop | Mobile |
@@ -148,6 +154,7 @@ Phòng phỏng vấn dùng chung route `#/interview` với trang thiết lập: 
 
 | # | Màn hình | Route | Nội dung chính |
 |---|---|---|---|
+| I00 | Chưa có API key | `#/interview` | Chỉ hiện khung yêu cầu nhập Gemini API key kèm hướng dẫn lấy key; các mục khác (JD, thiết lập, lịch sử) hiện sau khi lưu key (không áp dụng khi chạy trong Claude) |
 | I01 | Thiết lập: một vòng | `#/interview` | Danh sách JD, chọn vòng, số câu hỏi vặn, phong cách người phỏng vấn, ngôn ngữ, lịch sử phỏng vấn |
 | I02 | Thiết lập: trọn quy trình | `#/interview` | Chọn nhiều vòng theo thứ tự tuyển dụng |
 | I03 | Thêm JD | `#/interview` | Form tên JD, vị trí, cấp độ, loại công ty, nội dung JD |
@@ -163,6 +170,11 @@ Phòng phỏng vấn dùng chung route `#/interview` với trang thiết lập: 
 | I13 | Tổng kết buổi | `#/interview` | Điểm chung, điểm từng vòng, chủ đề nên ôn, nút **Phỏng vấn mới** (chính) và Xem tổng kết nằm ngang tiêu đề |
 | I14 | Báo cáo: buổi một vòng | `#/report/{id}` | Kết quả vòng đầy đủ và bản ghi |
 | I15 | Báo cáo: buổi nhiều vòng | `#/report/{id}` | Phần tổng kết, sau đó là kết quả từng vòng |
+
+### I00. Chưa có API key
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/i00-key-required-desktop.png" width="640"> | <img src="screens/i00-key-required-mobile.png" width="240"> |
 
 ### I01. Thiết lập: một vòng
 | Desktop | Mobile |

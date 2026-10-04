@@ -7,7 +7,7 @@ CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.environ.get("APP_URL", "http://localhost:8000") + "/tests/screens.html"
 OUT = os.path.join(ROOT, "docs", "screens")
-ALL = re.findall(r'^  "([a-z]\d\d-[a-z0-9-]+)":', open(os.path.join(ROOT, "tests", "screens.html"), encoding="utf-8").read(), re.M)
+ALL = re.findall(r'^  "([a-z]\d\d[a-z]?-[a-z0-9-]+)":', open(os.path.join(ROOT, "tests", "screens.html"), encoding="utf-8").read(), re.M)
 states = sys.argv[1].split(",") if len(sys.argv) > 1 else ALL
 os.makedirs(OUT, exist_ok=True)
 
