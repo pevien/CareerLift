@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CareerLift unit tests</title>
+<style>
+body{font:14px/1.5 system-ui,sans-serif;margin:16px;background:#fff;color:#1a1a1a}
+.pass{color:#17855A}.fail{color:#C63A31}
+pre{white-space:pre-wrap;background:#f4f4f4;padding:8px;border-radius:6px}
+iframe{width:390px;height:300px;border:1px solid #ccc}
+</style>
+</head>
+<body>
+<h1>CareerLift unit tests</h1>
+<p id="summary">Đang chạy…</p>
+<ol id="list"></ol>
+<iframe id="app" src="../index.html" title="App under test"></iframe>
+<script>
+"use strict";
+const tests = [];
+function test(name, fn){ tests.push({name, fn}); }
+function eq(actual, expected, msg){
+  const a = JSON.stringify(actual), e = JSON.stringify(expected);
+  if(a !== e) throw new Error((msg ? msg + ": " : "") + "expected " + e + " but got " + a);
+}
+function ok(v, msg){ if(!v) throw new Error(msg || "expected truthy"); }
+
+// Lưu localStorage của origin trước khi test để trả lại nguyên trạng (khi chạy qua http://localhost).
+const LS_SNAPSHOT = {};
+for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); LS_SNAPSHOT[k] = localStorage.getItem(k); }
+function restoreLs(){ localStorage.clear(); for(const [k, v] of Object.entries(LS_SNAPSHOT)) localStorage.setItem(k, v); }
+
+let W; // window của app trong iframe
+const g = expr => W.eval(expr);
+function freshState(){ return g("defaultState()"); }
+function st(over){ return Object.assign(freshState(), over); }
+
+/* ---------- normalize / state ---------- */
+test("normalize: null trả về state mặc định", () => {
+  const s = W.normalize(null);
+  eq(s.profile.role, "pm"); eq(s.scores, []); eq(s.jds, []);
+});
+test("normalize: role không hợp lệ quay về pm", () => {
+  eq(W.normalize({profile:{role:"ceo"}}).profile.role, "pm");
+});
+test("normalize: JD cũ trong profile được chuyển sang danh sách jds", () => {
+  const s = W.normalize({profile:{role:"po", jd:"Tuyển PO fintech"}});
+  eq(s.jds.length, 1); eq(s.jds[0].text, "Tuyển PO fintech"); eq(s.profile.jd, ""); eq(s.profile.activeJd, s.jds[0].id);
+});
+test("normalize: activeJd trỏ tới JD không tồn tại bị xóa", () => {
+  eq(W.normalize({profile:{activeJd:"jdX"}, jds:[]}).profile.activeJd, "");
+});
+
+/* ---------- helpers ---------- */
+test("esc: escape ký tự HTML", () => {
+  eq(W.esc(`<a href="x">'&'</a>`), "&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;");
+  eq(W.esc(null), "");
+});
+test("clean: bỏ ** và tiêu đề markdown", () => { eq(W.clean("## Tiêu đề\n**đậm**"), "Tiêu đề\nđậm"); });
+test("clamp", () => { eq(W.clamp(5, 0, 3), 3); eq(W.clamp(-1, 0, 3), 0); eq(W.clamp(2, 0, 3), 2); });
+test("verdictOf: ngưỡng 70 và 55", () => {
+  eq(W.verdictOf(70), "pass"); eq(W.verdictOf(69), "borderline"); eq(W.verdictOf(55), "borderline"); eq(W.verdictOf(54), "fail");
+});
+test("fmtInterval", () => { eq(W.fmtInterval(0), "10 phút"); eq(W.fmtInterval(2.6), "3 ngày"); });
+
+/* ---------- lặp lại ngắt quãng ---------- */
+test("nextIntervals: thẻ mới", () => {
+  g("S = defaultState()");
+  eq(W.nextIntervals("sense-0"), {again:0, hard:1, good:1, easy:4});
+});
+test("nextIntervals: thẻ đã có khoảng cách 2 ngày", () => {
+  g(`S = defaultState(); S.cards["sense-0"] = {i:2, n:3, due:0}`);
+  const n = W.nextIntervals("sense-0");
+  eq(n.again, 0); eq(+n.hard.toFixed(2), 2.4); eq(n.good, 5); eq(n.easy, 7);
+});
+test("isDue / learnedCount", () => {
+  g(`S = defaultState(); S.cards["sense-0"] = {i:4, n:2, due: Date.now() + 86400000}; S.cards["sense-1"] = {i:1, n:1, due: 0}`);
+  eq(W.isDue("sense-0"), false); eq(W.isDue("sense-1"), true); eq(W.isDue("sense-2"), true);
+  eq(W.learnedCount("sense"), 1);
+});
+test("mastery: trung bình 5 lần chấm gần nhất của chủ đề", () => {
+  g(`S = defaultState(); S.scores = [10,20,30,40,50,60].map((s,i) => ({t:"metrics", s, d:i})).concat([{t:"sense", s:99, d:9}])`);
+  eq(W.mastery("metrics"), 40); eq(W.mastery("strategy"), null);
+});
+test("weakestTopic: ưu tiên chủ đề chưa có điểm", () => {
+  g(`S = defaultState(); S.scores = [{t:"sense", s:90, d:1}]`);
+  eq(W.weakestTopic(), "metrics");
+});
+
+/* ---------- chấm điểm ---------- */
+test("normEval: tính overall từ điểm tiêu chí khi thiếu", () => {
+  const r = W.normEval({scores:[{criterion:"A", score:4}, {criterion:"B", score:3}]});
+  eq(r.overall, 70); eq(r.verdict, "pass");
+});
+test("normEval: kẹp điểm, bỏ tiêu chí rỗng, lọc weakTopics lạ", () => {
+  const r = W.normEval({scores:[{criterion:"A", score:9}, {criterion:"", score:2}], overall:140, weakTopics:["sense","xyz"], strengths:["**tốt**", ""]});
+  eq(r.scores, [{criterion:"A", score:5, comment:""}]); eq(r.overall, 100); eq(r.weakTopics, ["sense"]); eq(r.strengths, ["tốt"]);
+});
+test("normEval: input rác không làm vỡ app", () => {
+  const r = W.normEval("oops"); eq(r.overall, 0); eq(r.verdict, "fail"); eq(r.scores, []);
+});
+test("overallOf / finalVerdict", () => {
+  const res = s => ({eval:{overall:s, verdict:W.verdictOf(s)}});
+  eq(W.overallOf([res(80), res(61)]), 71); eq(W.overallOf([]), 0);
+  eq(W.finalVerdict([res(80), res(75)], 2).t, "Nhận offer");
+  eq(W.finalVerdict([res(80), res(40)], 2).t, "Chưa đạt");
+  eq(W.finalVerdict([res(80)], 3).t, "Chưa hoàn tất");
+});
+
+/* ---------- gộp dữ liệu đồng bộ ---------- */
+test("mergeState: hồ sơ lấy theo bản lưu sau", () => {
+  const a = st({_t:100, profile:Object.assign(freshState().profile, {level:"junior"})});
+  const b = st({_t:200, profile:Object.assign(freshState().profile, {level:"senior"})});
+  eq(W.mergeState(a, b).profile.level, "senior"); eq(W.mergeState(b, a).profile.level, "senior");
+});
+test("mergeState: thẻ giữ bản ôn nhiều lần hơn", () => {
+  const a = st({_t:200, cards:{"sense-0":{i:1, n:1, due:5}, "sense-1":{i:6, n:4, due:9}}});
+  const b = st({_t:100, cards:{"sense-0":{i:3, n:2, due:7}, "sense-2":{i:1, n:1, due:1}}});
+  const m = W.mergeState(a, b).cards;
+  eq(m["sense-0"].n, 2); eq(m["sense-1"].n, 4); eq(m["sense-2"].n, 1);
+});
+test("mergeState: điểm gộp, bỏ trùng, sắp theo thời gian", () => {
+  const a = st({_t:2, scores:[{t:"sense", s:50, d:1, src:"quiz"}, {t:"sense", s:70, d:3, src:"practice"}]});
+  const b = st({_t:1, scores:[{t:"sense", s:50, d:1, src:"quiz"}, {t:"metrics", s:60, d:2, src:"quiz"}]});
+  eq(W.mergeState(a, b).scores.map(x => x.d), [1, 2, 3]);
+});
+test("mergeState: giữ tối đa 400 lần chấm mới nhất", () => {
+  const mk = (from, n) => Array.from({length:n}, (_, i) => ({t:"sense", s:50, d:from + i, src:"quiz"}));
+  const m = W.mergeState(st({_t:2, scores:mk(1000, 300)}), st({_t:1, scores:mk(0, 300)}));
+  eq(m.scores.length, 400); eq(m.scores[0].d, 200);
+});
+test("mergeState: câu đã luyện giữ điểm cao nhất và lần mới nhất", () => {
+  const m = W.mergeState(st({_t:2, practice:{q1:{best:60, last:10}}}), st({_t:1, practice:{q1:{best:80, last:5}, q2:{best:40, last:1}}}));
+  eq(m.practice.q1, {best:80, last:10}); eq(m.practice.q2, {best:40, last:1});
+});
+test("mergeState: JD, bài đã học và nội dung AI được gộp", () => {
+  const a = st({_t:2, jds:[{id:"j1", name:"A mới"}], lessons:{l1:5}, custom:{sense:[{id:"c1"}]}});
+  const b = st({_t:1, jds:[{id:"j1", name:"A cũ"}, {id:"j2", name:"B"}], lessons:{l1:9, l2:3}, custom:{sense:[{id:"c1"}, {id:"c2"}], metrics:[{id:"c3"}]}});
+  const m = W.mergeState(a, b);
+  eq(m.jds.map(j => j.name).sort(), ["A mới", "B"]);
+  eq(m.lessons, {l1:9, l2:3});
+  eq(m.custom.sense.map(x => x.id), ["c1", "c2"]); eq(m.custom.metrics.map(x => x.id), ["c3"]);
+});
+test("mergeState: sau khi xóa tiến độ, dữ liệu cũ ở máy khác không quay lại", () => {
+  const wiped = st({_t:500, _resetAt:400, jds:[{id:"j1"}]});
+  const stale = st({_t:300, cards:{"sense-0":{i:5, n:5, due:1}}, scores:[{t:"sense", s:90, d:250}], jds:[{id:"j2"}]});
+  const m = W.mergeState(stale, wiped);
+  eq(m.cards, {}); eq(m.scores, []); eq(m._resetAt, 400);
+  eq(m.jds.map(j => j.id).sort(), ["j1", "j2"], "JD vẫn được giữ");
+});
+test("mergeState: điểm mới sau lần xóa vẫn được gộp", () => {
+  const a = st({_t:600, _resetAt:400, scores:[{t:"sense", s:70, d:550}]});
+  const b = st({_t:450, scores:[{t:"sense", s:60, d:300}, {t:"metrics", s:65, d:420}]});
+  eq(W.mergeState(a, b).scores.map(x => x.d), [420, 550]);
+});
+test("mergeState: không thay đổi dữ liệu đầu vào", () => {
+  const a = st({_t:2, cards:{"sense-0":{i:1, n:1, due:1}}}), b = st({_t:1, cards:{"sense-1":{i:1, n:1, due:1}}});
+  const before = JSON.stringify([a, b]); W.mergeState(a, b); eq(JSON.stringify([a, b]), before);
+});
+test("mergeSessions: gộp theo id, giữ bản nhiều vòng hơn, mới nhất trước", () => {
+  const s = (id, createdAt, n) => ({id, createdAt, results:Array(n).fill({})});
+  const m = W.mergeSessions([s("a", 1, 1), s("b", 3, 1)], [s("a", 1, 2), s("c", 2, 1)], 0);
+  eq(m.map(x => x.id), ["b", "c", "a"]); eq(m.find(x => x.id === "a").results.length, 2);
+});
+test("mergeSessions: lọc buổi trước lần xóa và giữ tối đa 40", () => {
+  const many = Array.from({length:50}, (_, i) => ({id:"s" + i, createdAt:100 + i, results:[]}));
+  const m = W.mergeSessions(many, [{id:"old", createdAt:5, results:[]}], 50);
+  eq(m.length, 40); eq(m[0].id, "s49"); ok(!m.some(x => x.id === "old"));
+});
+
+/* ---------- Google Drive sync (fetch giả lập) ---------- */
+function fakeDrive(remote){
+  const calls = [];
+  W.fetch = async (url, opts) => {
+    opts = opts || {}; calls.push({url, method: opts.method || "GET", body: opts.body});
+    const json = (o, status) => ({ok: true, status: status || 200, json: async () => o});
+    if(url.includes("/drive/v3/files?spaces=appDataFolder")) return json({files: remote ? [{id:"F1"}] : []});
+    if(url.includes("/drive/v3/files/F1?alt=media")) return json(remote);
+    if(url.includes("/upload/drive/v3/files/F1")) return json({id:"F1"});
+    if(url.includes("/upload/drive/v3/files?uploadType=multipart")) return json({id:"NEW"});
+    return {ok:false, status:500, json: async () => ({})};
+  };
+  return calls;
+}
+function setupDrive(){
+  W.localStorage.setItem("pmprep:gdrive:cid", "test.apps.googleusercontent.com");
+  g(`Object.assign(GD, {token:"tok", exp: Date.now() + 3600000, fileId:null, busy:false, err:"", last:0})`);
+}
+test("gdSync: lần đầu tạo file mới trong appDataFolder", async () => {
+  g(`S = defaultState(); Store.sessions = []`); setupDrive();
+  const calls = fakeDrive(null);
+  await W.gdSync();
+  eq(g("GD.err"), ""); eq(g("GD.fileId"), "NEW"); ok(g("GD.last") > 0);
+  const post = calls.find(c => c.method === "POST"); ok(post, "phải có request tạo file");
+  eq(W.localStorage.getItem("pmprep:gdrive:on"), "1");
+});
+test("gdSync: tải bản trên Drive về, gộp và ghi lại", async () => {
+  g(`S = defaultState(); S._t = 100; Store.sessions = [{id:"local", createdAt: 10, results:[]}]`); setupDrive();
+  const remoteState = Object.assign(freshState(), {_t:200, scores:[{t:"sense", s:88, d:150, src:"quiz"}]});
+  const calls = fakeDrive({state: remoteState, sessions:[{id:"remote", createdAt: 20, results:[]}]});
+  await W.gdSync();
+  eq(g("GD.err"), "");
+  eq(g("S.scores.length"), 1); eq(g("Store.sessions.map(s => s.id)"), ["remote", "local"]);
+  const patch = calls.find(c => c.method === "PATCH"); ok(patch, "phải ghi đè file cũ");
+  const body = JSON.parse(patch.body);
+  eq(body.sessions.length, 2); eq(body.state.scores[0].s, 88);
+  eq(JSON.parse(W.localStorage.getItem("pmprep:sessions:v1")).length, 2, "lưu lại vào localStorage");
+});
+test("gdSync: token hết hạn (401) báo lỗi và xóa token", async () => {
+  g(`S = defaultState(); Store.sessions = []`); setupDrive();
+  W.fetch = async () => ({ok:false, status:401, json: async () => ({})});
+  await W.gdSync();
+  ok(/hết hạn/.test(g("GD.err")), "phải báo phiên hết hạn"); eq(g("GD.token"), null);
+});
+test("gdSchedule: không gọi Drive khi chưa bật đồng bộ", () => {
+  W.localStorage.removeItem("pmprep:gdrive:on");
+  g(`GD.timer = null`); W.gdSchedule(); eq(g("GD.timer"), null);
+});
+test("save: ghi mốc thời gian _t", () => {
+  g(`S = defaultState()`); const t0 = Date.now(); W.save(); ok(g("S._t") >= t0);
+});
+
+/* ---------- song ngữ ---------- */
+test("tr: dịch chuỗi giao diện đồng bộ sang tiếng Anh", () => {
+  g(`S.profile.uiLang = "en"; ensureLang()`);
+  eq(W.tr("Đồng bộ ngay"), "Sync now");
+  ok(W.tr("Đã đồng bộ lúc 5/10 09:00").startsWith("Synced at"));
+  g(`S.profile.uiLang = "vi"; ensureLang()`);
+  eq(W.tr("Đồng bộ ngay"), "Đồng bộ ngay");
+});
+
+/* ---------- runner ---------- */
+async function run(){
+  W = document.getElementById("app").contentWindow;
+  let pass = 0, fail = 0; const list = document.getElementById("list");
+  for(const t of tests){
+    const li = document.createElement("li");
+    try{ await t.fn(); pass++; li.className = "pass"; li.textContent = "✓ " + t.name; }
+    catch(e){ fail++; li.className = "fail"; li.innerHTML = "✗ " + t.name + "<pre></pre>"; li.querySelector("pre").textContent = e.stack || e.message; }
+    list.appendChild(li);
+  }
+  restoreLs();
+  const sum = document.getElementById("summary");
+  sum.className = fail ? "fail" : "pass";
+  sum.textContent = `RESULT: ${pass} passed, ${fail} failed`;
+  document.title = sum.textContent;
+}
+document.getElementById("app").addEventListener("load", () => {
+  try{ run(); }catch(e){ document.getElementById("summary").textContent = "RESULT: cannot access app iframe (" + e.message + "). Chạy qua tests/run.sh hoặc ./serve.sh."; }
+});
+</script>
+</body>
+</html>

@@ -84,9 +84,11 @@ main{max-width:920px;margin:0 auto;padding:28px 20px 64px}
 .back{margin:-6px 0 8px -10px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
 .label{display:block;font-weight:500;font-size:.92rem;margin-bottom:6px}
-select,input[type=text],textarea{width:100%;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
+select,input[type=text],input[type=password],textarea{width:100%;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
 textarea{resize:vertical;min-height:140px;line-height:1.55}
 select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
+.ai-form{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr) auto;gap:10px}
+@media (max-width:520px){.ai-form{grid-template-columns:1fr}}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;cursor:pointer;font-size:.92rem}
@@ -242,12 +244,11 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 </head>
 <body>
 <header class="top"><div class="top-in">
-  <button class="brand" data-go="home" aria-label="Về trang Hôm nay"><span class="brand-mark" aria-hidden="true">✎</span>Phòng phỏng vấn</button>
+  <button class="brand" data-go="learn" aria-label="Về trang Kiến thức"><span class="brand-mark" aria-hidden="true">✎</span>Phòng phỏng vấn</button>
   <nav class="nav" aria-label="Điều hướng chính">
-    <button data-go="home"><span class="ico" aria-hidden="true">☀︎</span>Hôm nay</button>
-    <button data-go="learn"><span class="ico" aria-hidden="true">❏</span>Học</button>
-    <button data-go="interview"><span class="ico" aria-hidden="true">◉</span>Phỏng vấn</button>
-    <button data-go="progress"><span class="ico" aria-hidden="true">▤</span>Tiến độ</button>
+    <button data-go="learn"><span class="ico" aria-hidden="true">❏</span>Kiến thức</button>
+    <button data-go="interview"><span class="ico" aria-hidden="true">◉</span>Phỏng vấn thử</button>
+    <button data-go="settings"><span class="ico" aria-hidden="true">⚙︎</span>Cài đặt</button>
   </nav>
   <button id="lang-toggle" class="lang-toggle" data-act="toggle-lang" aria-label="Switch to English" title="Switch to English">EN</button>
 </div></header>
@@ -656,7 +657,9 @@ async function initStore(){
 }
 function save(){
   if(S.scores.length > 400) S.scores = S.scores.slice(-400);
+  S._t = Date.now();
   lsSet(LS_KEY, S);
+  gdSchedule();
   if(!Store.db) return;
   clearTimeout(Store.timer);
   Store.timer = setTimeout(() => { stateRef().set(clone(S)).catch(e => console.warn("save", e)); }, 700);
@@ -666,7 +669,133 @@ function saveSession(sess){
   if(i >= 0) Store.sessions[i] = clone(sess); else Store.sessions.unshift(clone(sess));
   Store.sessions = Store.sessions.slice(0, 40);
   lsSet(LS_SESS, Store.sessions);
+  gdSchedule();
   if(Store.db) sessCol().doc(sess.id).set(clone(sess)).catch(e => console.warn("session", e));
+}
+
+/* ================= SYNC MERGE (pure) ================= */
+// Gộp hai bản tiến độ (máy này và Google Drive). Bản ghi sau lần "Xóa toàn bộ tiến độ" mới nhất mới được giữ.
+function mergeState(a, b){
+  a = normalize(a); b = normalize(b);
+  const [nw, od] = (b._t || 0) > (a._t || 0) ? [b, a] : [a, b];
+  const reset = Math.max(a._resetAt || 0, b._resetAt || 0);
+  const out = clone(nw); out._resetAt = reset || undefined; if(!reset) delete out._resetAt;
+  const byId = new Map(); for(const j of od.jds.concat(nw.jds)) if(j && j.id) byId.set(j.id, j);
+  out.jds = [...byId.values()];
+  if((od._t || 0) < reset) return out;
+  for(const [id, r] of Object.entries(od.cards)){ const c = out.cards[id]; if(!c || (r.n || 0) > (c.n || 0) || ((r.n || 0) === (c.n || 0) && (r.due || 0) > (c.due || 0))) out.cards[id] = r; }
+  const sk = x => x.t + "|" + x.d + "|" + (x.src || ""), seen = new Set(out.scores.map(sk));
+  for(const x of od.scores) if(!seen.has(sk(x))){ seen.add(sk(x)); out.scores.push(x); }
+  out.scores = out.scores.filter(x => x.d > reset).sort((x, y) => x.d - y.d).slice(-400);
+  for(const [id, r] of Object.entries(od.practice)){ const c = out.practice[id]; out.practice[id] = c ? {best: Math.max(c.best || 0, r.best || 0), last: Math.max(c.last || 0, r.last || 0)} : r; }
+  for(const [id, ts] of Object.entries(od.lessons)) out.lessons[id] = Math.max(out.lessons[id] || 0, ts || 0);
+  for(const k of ["custom", "customLessons"]) for(const [t, xs] of Object.entries(od[k])){ const have = out[k][t] || [], ids = new Set(have.map(x => x.id)); out[k][t] = have.concat((xs || []).filter(x => !ids.has(x.id))); }
+  return out;
+}
+function mergeSessions(a, b, resetAt){
+  const m = new Map();
+  for(const s of (a || []).concat(b || [])){ if(!s || !s.id) continue; const c = m.get(s.id); if(!c || (s.results || []).length > (c.results || []).length) m.set(s.id, s); }
+  return [...m.values()].filter(s => (s.createdAt || 0) > (resetAt || 0)).sort((x, y) => y.createdAt - x.createdAt).slice(0, 40);
+}
+
+/* ================= GOOGLE DRIVE SYNC ================= */
+// Lưu một file JSON trong thư mục ẩn appDataFolder của Google Drive (người dùng không thấy, app khác không đọc được).
+const GD_CID_LS = "pmprep:gdrive:cid", GD_ON_LS = "pmprep:gdrive:on", GD_FILE = "careerlift-sync.json";
+const GD_API = "https://www.googleapis.com/drive/v3/files", GD_UP = "https://www.googleapis.com/upload/drive/v3/files";
+const GD = {token:null, exp:0, fileId:null, busy:false, again:false, err:"", last:0, timer:null, gis:null};
+function gdCid(){ return lsStr(GD_CID_LS).trim(); }
+function gdOn(){ return lsStr(GD_ON_LS) === "1" && !!gdCid(); }
+function gdHasToken(){ return !!GD.token && Date.now() < GD.exp - 60000; }
+function gdLoadGis(){
+  if(window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
+  if(!GD.gis) GD.gis = new Promise((ok, bad) => { const s = document.createElement("script"); s.src = "https://accounts.google.com/gsi/client"; s.async = true; s.onload = ok; s.onerror = () => { GD.gis = null; bad(new Error("Không tải được Google Identity Services")); }; document.head.appendChild(s); });
+  return GD.gis;
+}
+async function gdToken(){
+  if(gdHasToken()) return GD.token;
+  await gdLoadGis();
+  return new Promise((ok, bad) => {
+    const client = google.accounts.oauth2.initTokenClient({client_id: gdCid(), scope: "https://www.googleapis.com/auth/drive.appdata",
+      callback: r => { if(r.error){ bad(new Error(r.error_description || r.error)); return; } GD.token = r.access_token; GD.exp = Date.now() + (Number(r.expires_in) || 3600) * 1000; ok(GD.token); },
+      error_callback: e => bad(new Error(e && e.type === "popup_failed_to_open" ? "Trình duyệt chặn cửa sổ đăng nhập Google" : (e && e.message) || "Chưa đăng nhập Google"))});
+    client.requestAccessToken({prompt: lsStr(GD_ON_LS) === "1" ? "" : "consent"});
+  });
+}
+async function gdFetch(url, opts){
+  opts = opts || {};
+  const res = await fetch(url, Object.assign({}, opts, {headers: Object.assign({authorization: "Bearer " + GD.token}, opts.headers || {})}));
+  if(res.status === 401){ GD.token = null; throw new Error("Phiên Google đã hết hạn, bấm Đồng bộ ngay để đăng nhập lại"); }
+  if(res.status === 404 && GD.fileId && url.includes(GD.fileId)){ GD.fileId = null; throw new Error("retry"); }
+  if(!res.ok) throw new Error("Google Drive lỗi " + res.status);
+  return res.status === 204 ? null : res.json();
+}
+function gdApply(remote){
+  if(!remote || typeof remote !== "object") return false;
+  const before = JSON.stringify([S, Store.sessions]);
+  if(remote.state) S = mergeState(S, remote.state);
+  Store.sessions = mergeSessions(Store.sessions, remote.sessions, S._resetAt);
+  if(JSON.stringify([S, Store.sessions]) === before) return false;
+  lsSet(LS_KEY, S); lsSet(LS_SESS, Store.sessions);
+  if(Store.db){ stateRef().set(clone(S)).catch(()=>{}); Store.sessions.forEach(s => sessCol().doc(s.id).set(clone(s)).catch(()=>{})); }
+  return true;
+}
+async function gdSync(){
+  if(!gdCid()) return;
+  if(GD.busy){ GD.again = true; return; }
+  GD.busy = true; GD.err = ""; gdPaint();
+  let changed = false;
+  try{
+    await gdToken();
+    for(let attempt = 0; attempt < 2; attempt++){
+      try{
+        if(!GD.fileId){ const r = await gdFetch(GD_API + "?spaces=appDataFolder&fields=files(id)&q=" + encodeURIComponent("name='" + GD_FILE + "'")); GD.fileId = (r && r.files && r.files[0] && r.files[0].id) || null; }
+        if(GD.fileId) changed = gdApply(await gdFetch(GD_API + "/" + GD.fileId + "?alt=media")) || changed;
+        const body = JSON.stringify({app:"careerlift", v:1, at:Date.now(), state:S, sessions:Store.sessions});
+        if(GD.fileId) await gdFetch(GD_UP + "/" + GD.fileId + "?uploadType=media", {method:"PATCH", headers:{"content-type":"application/json"}, body});
+        else {
+          const fd = new FormData();
+          fd.append("metadata", new Blob([JSON.stringify({name: GD_FILE, parents: ["appDataFolder"]})], {type:"application/json"}));
+          fd.append("file", new Blob([body], {type:"application/json"}));
+          GD.fileId = (await gdFetch(GD_UP + "?uploadType=multipart&fields=id", {method:"POST", body: fd})).id;
+        }
+        break;
+      }catch(e){ if(e.message !== "retry" || attempt) throw e; }
+    }
+    try{ localStorage.setItem(GD_ON_LS, "1"); }catch(e){}
+    GD.last = Date.now();
+  }catch(e){ GD.err = e.message || String(e); console.warn("gdrive", e); }
+  GD.busy = false;
+  if(changed && !(view.name === "interview" && IV)) render(); else gdPaint();
+  if(GD.again){ GD.again = false; gdSchedule(); }
+}
+function gdSchedule(){
+  if(!gdOn() || !gdHasToken()) return;
+  clearTimeout(GD.timer);
+  GD.timer = setTimeout(gdSync, 3000);
+}
+function gdStatus(){
+  if(GD.busy) return "Đang đồng bộ…";
+  if(GD.err) return GD.err;
+  if(GD.last) return "Đã đồng bộ lúc " + fmtDate(GD.last);
+  return gdOn() ? "Bấm Đồng bộ ngay để đăng nhập Google và tải tiến độ mới nhất." : "Chưa bật.";
+}
+function gdPanel(){
+  if(IN_CLAUDE) return "";
+  const cid = gdCid();
+  return `<section class="panel stack" style="--gap:12px" id="gd-panel">
+    <h2>Đồng bộ Google Drive</h2>
+    <p class="small muted">Lưu tiến độ học và lịch sử phỏng vấn vào Google Drive của bạn để dùng trên nhiều máy, nhiều trình duyệt. Dữ liệu nằm trong thư mục ẩn của app, không hiện trong Drive.</p>
+    ${cid ? `<p class="small ${GD.err ? "note err" : ""}" role="status">${esc(gdStatus())}</p>
+      <div class="row"><button class="btn primary" data-act="gd-sync" ${GD.busy ? "disabled" : ""}>Đồng bộ ngay</button><button class="btn ghost danger" data-act="gd-off">Tắt đồng bộ</button></div>`
+    : `<label><span class="label">Google OAuth Client ID</span><input type="text" id="gd-cid" autocomplete="off" placeholder="1234-abc.apps.googleusercontent.com"></label>
+      <p class="small muted">Tạo OAuth Client ID loại Web application trong Google Cloud Console, bật Google Drive API và thêm địa chỉ đang mở app vào Authorized JavaScript origins. Không dùng được khi mở trực tiếp file:// — hãy mở qua http://localhost hoặc một trang web.</p>
+      <div><button class="btn primary" data-act="gd-connect">Kết nối Google Drive</button></div>`}
+  </section>`;
+}
+function gdPaint(){
+  const el = document.getElementById("gd-panel"); if(!el) return;
+  el.outerHTML = gdPanel();
+  translateDom(document.getElementById("gd-panel"));
 }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -779,8 +908,8 @@ function aiErrText(e){
   if(c === "session_expired") return "Phiên đăng nhập đã hết hạn. Đăng nhập lại Claude rồi thử lại.";
   if(c === "invalid_json") return "AI trả về kết quả không đúng định dạng. Bấm thử lại.";
   if(c === "refused") return "AI không xử lý được nội dung này. Hãy sửa lại câu trả lời rồi thử lại.";
-  if(c === "no_ai") return "Để dùng AI khi mở file trên máy, hãy nhập Gemini API key ở mục Cài đặt AI trên trang Hôm nay.";
-  if(c === "bad_key") return "Gemini API key không hợp lệ hoặc chưa được bật quyền. Kiểm tra lại ở mục Cài đặt AI trên trang Hôm nay.";
+  if(c === "no_ai") return "Để dùng AI khi mở file trên máy, hãy nhập Gemini API key ở mục Cài đặt AI trong trang Cài đặt.";
+  if(c === "bad_key") return "Gemini API key không hợp lệ hoặc chưa được bật quyền. Kiểm tra lại ở mục Cài đặt AI trong trang Cài đặt.";
   if(c === "bad_model") return "Không tìm thấy model Gemini đã chọn. Xóa ô Model ở mục Cài đặt AI để dùng model mặc định.";
   return "Kết nối với AI bị gián đoạn. Bấm thử lại.";
 }
@@ -797,19 +926,19 @@ function normEval(o){
 const JSON_SHAPE = '{"scores":[{"criterion":"tên tiêu chí","score":3,"comment":"một câu nhận xét"}],"overall":65,"summary":"2 câu tóm tắt","strengths":["điểm mạnh cụ thể"],"improvements":["việc cụ thể cần cải thiện"],"missing":["ý quan trọng còn thiếu"],"betterAnswer":"dàn ý 4-6 dòng, mỗi dòng bắt đầu bằng - ","weakTopics":["metrics"]}';
 
 /* ================= ROUTER ================= */
-let view = {name:"home"};
+let view = {name:"learn"};
 const app = document.getElementById("app");
 function go(name, params){
   view = Object.assign({name}, params || {});
   render();
   window.scrollTo(0, 0);
 }
-function navKey(){ return {home:"home", learn:"learn", topic:"learn", practice:"learn", quiz:"learn", lesson:"learn", review:view.from === "home" ? "home" : "learn", interview:"interview", progress:"progress", report:"progress"}[view.name] || "home"; }
+function navKey(){ return {learn:"learn", topic:"learn", practice:"learn", quiz:"learn", lesson:"learn", review:"learn", interview:"interview", report:"interview", settings:"settings"}[view.name] || "learn"; }
 function render(){
   ensureLang();
   document.querySelectorAll(".nav button").forEach(b => b.toggleAttribute("aria-current", false));
   const cur = document.querySelector(`.nav button[data-go="${navKey()}"]`); if(cur) cur.setAttribute("aria-current","page");
-  const fn = {home:vHome, learn:vLearn, topic:vTopic, review:vReview, practice:vPractice, quiz:vQuiz, lesson:vLesson, interview:vInterview, progress:vProgress, report:vReport}[view.name] || vHome;
+  const fn = {learn:vLearn, topic:vTopic, review:vReview, practice:vPractice, quiz:vQuiz, lesson:vLesson, interview:vInterview, report:vReport, settings:vSettings}[view.name] || vLearn;
   app.innerHTML = fn();
   translateDom(app);
   afterRender();
@@ -817,36 +946,27 @@ function render(){
 let afterHooks = [];
 function afterRender(){ const h = afterHooks; afterHooks = []; h.forEach(f => f()); }
 
-/* ================= HOME ================= */
+/* ================= SETTINGS ================= */
 let editingProfile = false;
-function vHome(){
-  const p = S.profile, due = dueIds().length, weak = weakestTopic(), nl = nextLesson();
-  const weakList = TOPICS.map(t => ({t, m: mastery(t.id)})).filter(x => x.m !== null).sort((a,b) => a.m - b.m).slice(0, 3);
-  return `<div class="stack" style="--gap:28px">
-  <section class="hero">
-    <h1>Hôm nay ôn gì?</h1>
-    <p class="muted">Đang ôn cho vị trí ${esc(ROLES[p.role].name)} ${esc(LEVELS[p.level])}, ${esc(COMPANY_SHORT[p.company].toLowerCase())}.</p>
-  </section>
-  <div class="today">
-    <button class="today-item yellow" data-act="review-due"><span class="big" style="font-size:2.2rem">${due}</span><span>${due ? "thẻ cần ôn hôm nay" : "thẻ đến hạn. Ôn lại toàn bộ cho chắc?"}</span></button>
-    ${nl ? `<button class="today-item" data-act="open-lesson" data-id="${nl.id}"><span class="big">Bài học tiếp theo</span><span class="muted">${esc(nl.t)}, ${nl.m} phút đọc</span></button>` : ""}
-    <button class="today-item" data-act="quick-practice" data-topic="${weak}"><span class="big">${esc(TOPIC[weak].name)}</span><span class="muted">Luyện một câu trả lời ở chủ đề ${mastery(weak) === null ? "bạn chưa luyện" : "đang yếu nhất"}</span></button>
-    <button class="today-item" data-go="interview"><span class="big">Phỏng vấn thử</span><span class="muted">${IV ? "Bạn đang có một buổi dở dang. Vào tiếp." : S.jds.length ? `Giả lập theo ${S.jds.length} JD đã lưu, hoặc thêm JD mới` : "Thêm JD công ty bạn đang ứng tuyển để giả lập sát thực tế"}</span></button>
-  </div>
+function vSettings(){
+  return `<div class="stack" style="--gap:24px">
+  <h1>Cài đặt</h1>
   ${homeTargetHtml()}
-  ${weakList.length ? `<section class="stack" style="--gap:12px"><h2>Cần ôn thêm</h2>
-    <div class="tlist">${weakList.map(x => `<button class="trow" data-act="open-topic" data-topic="${x.t.id}"><span><h3>${esc(x.t.name)}</h3></span>${bar(x.m)}<span class="meta"><span>Điểm gần đây ${x.m}/100</span></span></button>`).join("")}</div></section>` : ""}
   ${IN_CLAUDE ? "" : `<section class="panel stack" style="--gap:12px">
     <h2>Cài đặt AI</h2>
     ${getKey() ? `<p class="small">Đã lưu Gemini API key trên trình duyệt này. Model đang dùng: <b>${esc(getModel() || DEFAULT_MODEL)}</b>.</p>
       <div class="row"><button class="btn ghost danger" data-act="key-remove">Xóa API key</button></div>`
-    : `<p class="small muted">Khi mở file trên máy, các tính năng AI (chấm điểm, phỏng vấn thử, tạo đề, hỏi thêm) cần Gemini API key của bạn, lấy miễn phí tại aistudio.google.com. Không có key thì bài học, thẻ ghi nhớ và trắc nghiệm có sẵn vẫn dùng bình thường.</p>
-      <label><span class="label">Gemini API key</span><input type="password" id="api-key" autocomplete="off" placeholder="AIza..."></label>
-      <label><span class="label">Model (không bắt buộc)</span><input type="text" id="api-model" autocomplete="off" placeholder="${DEFAULT_MODEL}" value="${esc(getModel())}"></label>
-      <p class="small muted">Key chỉ lưu trong trình duyệt trên máy này và chỉ được gửi tới generativelanguage.googleapis.com. Đừng dùng trên máy dùng chung. Lưu ý: với gói miễn phí, Google có thể dùng nội dung gửi lên (câu trả lời, JD) để cải thiện sản phẩm của họ.</p>
-      <div><button class="btn primary" data-act="key-save">Lưu cài đặt</button></div>`}
+    : `<p class="small muted">Chấm điểm, phỏng vấn thử, tạo đề và hỏi thêm cần Gemini API key, lấy miễn phí tại aistudio.google.com.</p>
+      <div class="ai-form">
+        <input type="password" id="api-key" autocomplete="off" placeholder="Gemini API key" aria-label="Gemini API key">
+        <input type="text" id="api-model" autocomplete="off" placeholder="${DEFAULT_MODEL}" value="${esc(getModel())}" aria-label="Model (không bắt buộc)" title="Model (không bắt buộc)">
+        <button class="btn primary" data-act="key-save">Lưu</button>
+      </div>
+      <p class="small muted">Key chỉ lưu trên trình duyệt này. Với gói miễn phí, Google có thể dùng nội dung gửi lên để cải thiện sản phẩm.</p>`}
   </section>`}
-  ${Store.note === "local" && Store.ready ? `<p class="small muted">Tiến độ đang được lưu trên trình duyệt này.</p>` : ""}
+  ${gdPanel()}
+  ${Store.note === "local" && Store.ready ? `<p class="small muted">${gdOn() ? "Tiến độ được lưu trên trình duyệt này và đồng bộ với Google Drive." : "Tiến độ đang được lưu trên trình duyệt này."}</p>` : ""}
+  <section class="stack" style="--gap:8px"><button class="btn ghost danger" data-act="reset">Xóa toàn bộ tiến độ</button></section>
   </div>`;
 }
 function profileForm(){
@@ -957,7 +1077,7 @@ Chỉ trả về JSON đúng dạng:
     const jj = S.jds.find(x => x.id === id); if(jj){ jj.analysis = a; SU.loop = null; save(); }
     jdAn = {id:null, status:"idle", err:""};
   }catch(e){ jdAn = {id, status:"idle", err: aiErrText(e)}; }
-  if(view.name === "interview" || view.name === "home") render();
+  if(view.name === "interview") render();
 }
 function jdStatsHtml(){
   const by = {};
@@ -970,8 +1090,20 @@ function jdStatsHtml(){
 
 /* ================= LEARN ================= */
 function vLearn(){
-  return `<div class="stack" style="--gap:20px">
-  <h1>Học theo chủ đề</h1>
+  const p = S.profile, due = dueIds().length, weak = weakestTopic(), nl = nextLesson();
+  return `<div class="stack" style="--gap:28px">
+  <section class="hero">
+    <h1>Hôm nay ôn gì?</h1>
+    <p class="muted">Đang ôn cho vị trí ${esc(ROLES[p.role].name)} ${esc(LEVELS[p.level])}, ${esc(COMPANY_SHORT[p.company].toLowerCase())}.</p>
+  </section>
+  <div class="today">
+    <button class="today-item yellow" data-act="review-due"><span class="big" style="font-size:2.2rem">${due}</span><span>${due ? "thẻ cần ôn hôm nay" : "thẻ đến hạn. Ôn lại toàn bộ cho chắc?"}</span></button>
+    ${nl ? `<button class="today-item" data-act="open-lesson" data-id="${nl.id}"><span class="big">Bài học tiếp theo</span><span class="muted">${esc(nl.t)}, ${nl.m} phút đọc</span></button>` : ""}
+    <button class="today-item" data-act="quick-practice" data-topic="${weak}"><span class="big">${esc(TOPIC[weak].name)}</span><span class="muted">Luyện một câu trả lời ở chủ đề ${mastery(weak) === null ? "bạn chưa luyện" : "đang yếu nhất"}</span></button>
+  </div>
+  ${gdOn() && !GD.last ? `<div class="panel row"><span class="small">Google Drive đang bật nhưng chưa đồng bộ trong phiên này.</span><span class="spacer"></span><button class="btn" data-act="gd-sync" ${GD.busy ? "disabled" : ""}>Đồng bộ ngay</button></div>` : ""}
+  <section class="stack" style="--gap:20px">
+  <h2>Học theo chủ đề</h2>
   <p class="muted">Mỗi chủ đề đi theo bốn bước: đọc bài học, ôn thẻ ghi nhớ, luyện trả lời có AI chấm, và làm trắc nghiệm.</p>
   ${genLessonPanel("")}
   <div class="tlist">${TOPICS.map(t => {
@@ -979,7 +1111,7 @@ function vLearn(){
     return `<button class="trow" data-act="open-topic" data-topic="${t.id}">
       <span><h3>${esc(t.name)}</h3><span class="small muted">${esc(t.desc)}</span></span>${bar(m)}
       <span class="meta"><span>${lessonsRead(t.id)}/${lessonsOf(t.id).length} bài đã học</span><span>${learnedCount(t.id)}/${CARDS[t.id].length} thẻ đã nhớ</span><span>${d} thẻ đến hạn</span><span>${done} câu đã luyện</span>${m !== null ? `<span>Điểm ${m}</span>` : ""}</span></button>`;
-  }).join("")}</div></div>`;
+  }).join("")}</div></section></div>`;
 }
 let genState = {topic:null, status:"idle", err:""};
 function vTopic(){
@@ -1020,10 +1152,10 @@ function nextIntervals(id){
   return {again: 0, hard: Math.max(1, i * 1.2), good: i < 1 ? 1 : i * 2.5, easy: i < 1 ? 4 : i * 3.5};
 }
 function vReview(){
-  const backBtn = RV && RV.from === "topic" ? `<button class="btn ghost back" data-act="open-topic" data-topic="${RV.topic}">← ${esc(TOPIC[RV.topic].name)}</button>` : `<button class="btn ghost back" data-go="home">← Hôm nay</button>`;
+  const backBtn = RV && RV.from === "topic" ? `<button class="btn ghost back" data-act="open-topic" data-topic="${RV.topic}">← ${esc(TOPIC[RV.topic].name)}</button>` : `<button class="btn ghost back" data-go="learn">← Kiến thức</button>`;
   if(!RV || RV.idx >= RV.queue.length){
     return `<div class="stack">${backBtn}<div class="deck"><div class="postit" style="cursor:default"><p class="front">Xong ${RV ? RV.done : 0} thẻ.</p><p>Thẻ bạn chưa nhớ sẽ quay lại sau 10 phút, còn lại sẽ hẹn ôn vào những ngày tới.</p></div>
-      <div class="row"><button class="btn primary" data-act="quick-practice" data-topic="${RV && RV.topic ? RV.topic : weakestTopic()}">Luyện một câu trả lời</button><button class="btn" data-go="home">Về Hôm nay</button></div></div></div>`;
+      <div class="row"><button class="btn primary" data-act="quick-practice" data-topic="${RV && RV.topic ? RV.topic : weakestTopic()}">Luyện một câu trả lời</button><button class="btn" data-go="learn">Về Kiến thức</button></div></div></div>`;
   }
   const id = RV.queue[RV.idx], c = cardById(id), nx = nextIntervals(id);
   const ai = RV.ai;
@@ -1262,7 +1394,7 @@ function lessonsTab(t){
 }
 function vLesson(){
   const l = getLesson(view.id);
-  if(!l) return `<button class="btn ghost back" data-go="learn">← Học</button><p>Không tìm thấy bài học.</p>`;
+  if(!l) return `<button class="btn ghost back" data-go="learn">← Kiến thức</button><p>Không tìm thấy bài học.</p>`;
   const tid = topicOfLesson(l.id), t = TOPIC[tid], list = lessonsOf(tid), i = list.indexOf(l);
   const prev = list[i - 1], next = list[i + 1];
   if(LA.id !== l.id) LA = {id: l.id, q:"", text:"", status:"idle", err:""};
@@ -1410,7 +1542,7 @@ function quizReview(qz){
   }).join("")}</div>`;
 }
 function vQuiz(){
-  if(!QZ) return `<button class="btn ghost back" data-go="learn">← Học</button><p>Chưa có bài test nào.</p>`;
+  if(!QZ) return `<button class="btn ghost back" data-go="learn">← Kiến thức</button><p>Chưa có bài test nào.</p>`;
   const t = TOPIC[QZ.topic];
   const back = `<button class="btn ghost back" data-act="open-topic" data-topic="${t.id}" data-tab="quiz">← ${esc(t.name)}</button>`;
   if(QZ.submitted) return `<div class="stack" style="--gap:20px">${back}<h1>Kết quả bài test</h1>${renderEval(QZ.result, {practice:true})}
@@ -1460,6 +1592,7 @@ function vSetup(){
   </div>
   <p class="small muted">Vòng "Bài test AI" là 10 câu trắc nghiệm có giờ, giống bài test online để xem bạn hiểu và dùng AI thế nào.</p>
   <p class="small muted">Mẹo: trả lời thành tiếng trước khi gõ, hoặc dùng tính năng đọc chính tả của bàn phím điện thoại để luyện nói tự nhiên hơn.</p>
+  ${historyHtml()}
   </div>`;
 }
 function startInterview(){
@@ -1620,34 +1753,18 @@ function sessionSummary(s){
 }
 
 /* ================= PROGRESS & REPORTS ================= */
-function vProgress(){
-  const totalCards = TOPICS.reduce((a,t) => a + CARDS[t.id].length, 0);
-  const learned = TOPICS.reduce((a,t) => a + learnedCount(t.id), 0);
-  const practiced = Object.keys(S.practice).length;
-  return `<div class="stack" style="--gap:24px">
-  <h1>Tiến độ</h1>
-  <div class="today">
-    <div class="today-item" style="cursor:default"><span class="big">${learned}/${totalCards}</span><span class="muted">thẻ đã nhớ</span></div>
-    <div class="today-item" style="cursor:default"><span class="big">${practiced}</span><span class="muted">câu đã luyện trả lời</span></div>
-    <div class="today-item" style="cursor:default"><span class="big">${Store.sessions.length}</span><span class="muted">buổi phỏng vấn thử</span></div>
-  </div>
-  <section class="stack" style="--gap:12px"><h2>Theo chủ đề</h2>
-    <p class="small muted">Điểm trung bình 5 lần chấm gần nhất, gồm cả luyện trả lời và phỏng vấn thử.</p>
-    <div class="tlist">${TOPICS.map(t => { const m = mastery(t.id); return `<button class="trow" data-act="open-topic" data-topic="${t.id}"><span><h3>${esc(t.name)}</h3></span>${bar(m)}<span class="meta"><span>${m === null ? "Chưa có điểm" : "Điểm " + m}</span><span>${learnedCount(t.id)}/${CARDS[t.id].length} thẻ đã nhớ</span></span></button>`; }).join("")}</div>
-  </section>
-  ${jdStatsHtml()}
+function historyHtml(){
+  return `${jdStatsHtml()}
   <section class="stack" style="--gap:12px"><h2>Lịch sử phỏng vấn</h2>
     ${Store.sessions.length ? `<div class="hist">${Store.sessions.slice().sort((a,b) => b.createdAt - a.createdAt).map(s => { const ov = overallOf(s.results), fv = finalVerdict(s.results, s.rounds.length); return `<button class="hrow" data-act="open-report" data-id="${s.id}"><span class="dot" style="--c:${fv.c}"></span><span><b>${s.rounds.length > 1 ? "Trọn quy trình" : esc(ROUNDS[s.rounds[0]].name)}</b><br><span class="small muted">${s.jdName ? esc(s.jdName) + ", " : ""}${fmtDate(s.createdAt)}, ${s.results.length}/${s.rounds.length} vòng</span></span><span class="spacer"></span><b style="font-family:var(--display);color:${scoreColor(ov)}">${s.results.length ? ov : "–"}</b></button>`; }).join("")}</div>`
-      : `<div class="panel row"><span class="muted">Chưa có buổi phỏng vấn nào.</span><span class="spacer"></span><button class="btn primary" data-go="interview">Phỏng vấn thử</button></div>`}
-  </section>
-  <section class="stack" style="--gap:8px"><button class="btn ghost danger" data-act="reset">Xóa toàn bộ tiến độ</button></section>
-  </div>`;
+      : `<p class="small muted">Chưa có buổi phỏng vấn nào.</p>`}
+  </section>`;
 }
 function vReport(){
   const s = Store.sessions.find(x => x.id === view.id);
-  if(!s) return `<button class="btn ghost back" data-go="progress">← Tiến độ</button><p>Không tìm thấy buổi phỏng vấn này.</p>`;
+  if(!s) return `<button class="btn ghost back" data-go="interview">← Phỏng vấn thử</button><p>Không tìm thấy buổi phỏng vấn này.</p>`;
   return `<div class="stack" style="--gap:20px">
-    <button class="btn ghost back" data-go="progress">← Tiến độ</button>
+    <button class="btn ghost back" data-go="interview">← Phỏng vấn thử</button>
     ${sessionSummary(s)}
     ${s.results.map(res => { const r = ROUNDS[res.roundId]; return `<section class="stack" style="--gap:14px;padding-top:12px"><h2>${esc(r.name)}</h2>${renderEval(res.eval)}<details class="panel"><summary style="cursor:pointer">${res.quiz ? "Xem lại từng câu" : "Xem lại bản ghi"}</summary>${res.quiz ? `<div style="margin-top:12px">${quizReview(res.quiz)}</div>` : `<div class="chat" style="margin-top:12px">${chatHtml(res.transcript, r)}</div>`}</details></section>`; }).join("")}
   </div>`;
@@ -1667,7 +1784,7 @@ document.addEventListener("click", e => {
   if(!a) return;
   const d = a.dataset;
   switch(d.act){
-    case "review-due": { const ids = dueIds(); startReview(ids.length ? ids : TOPICS.flatMap(t => cardIds(t.id)), "home"); break; }
+    case "review-due": { const ids = dueIds(); startReview(ids.length ? ids : TOPICS.flatMap(t => cardIds(t.id)), "learn"); break; }
     case "review-topic": startReview(dueIds(d.topic), "topic", d.topic); break;
     case "review-topic-all": startReview(cardIds(d.topic), "topic", d.topic); break;
     case "flip": if(!RV.flipped){ RV.flipped = true; render(); const c = document.getElementById("card"); if(c){ c.classList.add("flip"); } } break;
@@ -1762,9 +1879,12 @@ document.addEventListener("click", e => {
       delete S.lessons[d.id]; save(); go("topic", {topic: tid, tab: "lessons"}); break;
     }
     case "open-report": go("report", {id: d.id}); break;
+    case "gd-connect": { const v = ((document.getElementById("gd-cid") || {}).value || "").trim(); if(!v) break; try{ localStorage.setItem(GD_CID_LS, v); localStorage.removeItem(GD_ON_LS); }catch(e){} gdSync().then(render); render(); break; }
+    case "gd-sync": gdSync().then(render); break;
+    case "gd-off": if(!arm(a, "Bấm lần nữa để tắt đồng bộ")) break; try{ if(GD.token && window.google && google.accounts) google.accounts.oauth2.revoke(GD.token, () => {}); localStorage.removeItem(GD_CID_LS); localStorage.removeItem(GD_ON_LS); }catch(e){} Object.assign(GD, {token:null, exp:0, fileId:null, err:"", last:0}); render(); break;
     case "reset":
       if(!arm(a, "Bấm lần nữa để xóa vĩnh viễn")) break;
-      { const prof = S.profile, jds = S.jds; S = defaultState(); S.profile = prof; S.jds = jds; save();
+      { const prof = S.profile, jds = S.jds; S = defaultState(); S.profile = prof; S.jds = jds; S._resetAt = Date.now(); save();
         if(Store.db) Store.sessions.forEach(s => sessCol().doc(s.id).delete().catch(()=>{}));
         Store.sessions = []; lsSet(LS_SESS, []); render(); }
       break;
@@ -2139,9 +2259,9 @@ function applyLang(l){
   Object.values(LESSONS).flat().forEach(x => { LESSON_BY_ID[x.id] = x; });
   document.documentElement.lang = CUR_LANG;
   document.title = isEn() ? "Product Interview Room" : "Phòng phỏng vấn Product";
-  const nav = {home:["Hôm nay","Today"], learn:["Học","Learn"], interview:["Phỏng vấn","Interview"], progress:["Tiến độ","Progress"]};
+  const nav = {learn:["Kiến thức","Knowledge"], interview:["Phỏng vấn thử","Mock interview"], settings:["Cài đặt","Settings"]};
   document.querySelectorAll(".nav button[data-go]").forEach(b => { const v = nav[b.dataset.go]; if(v) b.lastChild.nodeValue = v[isEn() ? 1 : 0]; });
-  const brand = document.querySelector(".brand"); if(brand){ brand.lastChild.nodeValue = isEn() ? "Interview Room" : "Phòng phỏng vấn"; brand.setAttribute("aria-label", isEn() ? "Go to Today" : "Về trang Hôm nay"); }
+  const brand = document.querySelector(".brand"); if(brand){ brand.lastChild.nodeValue = isEn() ? "Interview Room" : "Phòng phỏng vấn"; brand.setAttribute("aria-label", isEn() ? "Go to Knowledge" : "Về trang Kiến thức"); }
   const nv = document.querySelector(".nav"); if(nv) nv.setAttribute("aria-label", isEn() ? "Main navigation" : "Điều hướng chính");
   const lt = document.getElementById("lang-toggle");
   if(lt){ lt.textContent = isEn() ? "VI" : "EN"; lt.setAttribute("aria-label", isEn() ? "Chuyển sang tiếng Việt" : "Switch to English"); lt.title = lt.getAttribute("aria-label"); }
@@ -2210,10 +2330,9 @@ const I18N_DICT = {
   "Cài đặt AI":"AI settings",
   "Đã lưu Gemini API key trên trình duyệt này. Model đang dùng:":"Gemini API key saved in this browser. Model in use:",
   "Xóa API key":"Remove API key",
-  "Khi mở file trên máy, các tính năng AI (chấm điểm, phỏng vấn thử, tạo đề, hỏi thêm) cần Gemini API key của bạn, lấy miễn phí tại aistudio.google.com. Không có key thì bài học, thẻ ghi nhớ và trắc nghiệm có sẵn vẫn dùng bình thường.":"When running the file locally, AI features (grading, mock interviews, generating questions, follow-up questions) need your Gemini API key, available free at aistudio.google.com. Without a key, lessons, flashcards and the built-in quizzes still work normally.",
+  "Chấm điểm, phỏng vấn thử, tạo đề và hỏi thêm cần Gemini API key, lấy miễn phí tại aistudio.google.com.":"Grading, mock interviews, question generation and follow-ups need a Gemini API key, free at aistudio.google.com.",
   "Model (không bắt buộc)":"Model (optional)",
-  "Key chỉ lưu trong trình duyệt trên máy này và chỉ được gửi tới generativelanguage.googleapis.com. Đừng dùng trên máy dùng chung. Lưu ý: với gói miễn phí, Google có thể dùng nội dung gửi lên (câu trả lời, JD) để cải thiện sản phẩm của họ.":"The key is stored only in this browser on this device and is sent only to generativelanguage.googleapis.com. Don't use this on a shared computer. Note: on the free tier, Google may use the content you send (answers, JDs) to improve its products.",
-  "Lưu cài đặt":"Save settings",
+  "Key chỉ lưu trên trình duyệt này. Với gói miễn phí, Google có thể dùng nội dung gửi lên để cải thiện sản phẩm.":"The key is stored only in this browser. On the free tier, Google may use what you send to improve its products.",
   "Bấm lần nữa để xóa key":"Click again to remove the key",
   // Learn
   "Học theo chủ đề":"Learn by topic",
@@ -2235,7 +2354,7 @@ const I18N_DICT = {
   "Đánh dấu đã học":"Mark as done", "Đã học bài này.":"You've completed this lesson.",
   "Bài tiếp theo →":"Next lesson →", "← Bài trước":"← Previous", "Ôn thẻ chủ đề này":"Review this topic's cards",
   "Hoặc gõ câu hỏi của bạn":"Or type your own question",
-  "Không tìm thấy bài học.":"Lesson not found.", "← Học":"← Learn",
+  "Không tìm thấy bài học.":"Lesson not found.",
   // Review
   "Tự trả lời trong đầu, rồi chạm để xem đáp án":"Answer in your head, then tap to reveal",
   "Chạm để xem đáp án":"Tap to reveal the answer", "Đáp án đang hiện":"Answer shown",
@@ -2243,7 +2362,7 @@ const I18N_DICT = {
   "Hỏi AI: ví dụ thực tế và câu hỏi phỏng vấn liên quan":"Ask AI: a real-world example and a related interview question",
   "AI giải thích thêm":"AI explanation",
   "Thẻ bạn chưa nhớ sẽ quay lại sau 10 phút, còn lại sẽ hẹn ôn vào những ngày tới.":"Cards you forgot come back in 10 minutes; the rest are scheduled for the coming days.",
-  "Luyện một câu trả lời":"Practice an answer", "Về Hôm nay":"Back to Today", "← Hôm nay":"← Today",
+  "Luyện một câu trả lời":"Practice an answer", "Về Kiến thức":"Back to Knowledge", "← Kiến thức":"← Knowledge",
   "Đang suy nghĩ…":"Thinking…",
   // Practice
   "Câu trả lời của bạn":"Your answer", "Chấm điểm bằng AI":"Grade with AI", "Chấm lại":"Grade again", "Đang chấm…":"Grading…",
@@ -2264,8 +2383,8 @@ const I18N_DICT = {
   "AI trả về kết quả không đúng định dạng. Bấm thử lại.":"The AI returned an unexpected format. Please try again.",
   "AI không xử lý được nội dung này. Hãy sửa lại câu trả lời rồi thử lại.":"The AI couldn't process this content. Edit your answer and try again.",
   "Tính năng AI chỉ chạy khi mở trang này trong Claude.":"AI features only work when this page is opened in Claude.",
-  "Để dùng AI khi mở file trên máy, hãy nhập Gemini API key ở mục Cài đặt AI trên trang Hôm nay.":"To use AI when running the file locally, enter a Gemini API key under AI settings on the Today page.",
-  "Gemini API key không hợp lệ hoặc chưa được bật quyền. Kiểm tra lại ở mục Cài đặt AI trên trang Hôm nay.":"The Gemini API key is invalid or not enabled. Check it under AI settings on the Today page.",
+  "Để dùng AI khi mở file trên máy, hãy nhập Gemini API key ở mục Cài đặt AI trong trang Cài đặt.":"To use AI when running the file locally, enter a Gemini API key under AI settings on the Settings page.",
+  "Gemini API key không hợp lệ hoặc chưa được bật quyền. Kiểm tra lại ở mục Cài đặt AI trong trang Cài đặt.":"The Gemini API key is invalid or not enabled. Check it under AI settings on the Settings page.",
   "Không tìm thấy model Gemini đã chọn. Xóa ô Model ở mục Cài đặt AI để dùng model mặc định.":"The selected Gemini model wasn't found. Clear the Model field under AI settings to use the default.",
   "Kết nối với AI bị gián đoạn. Bấm thử lại.":"The connection to the AI was interrupted. Please try again.",
   // Quiz
@@ -2313,10 +2432,20 @@ const I18N_DICT = {
   // Progress
   "Tiến độ":"Progress", "thẻ đã nhớ":"cards learned", "câu đã luyện trả lời":"questions practiced", "buổi phỏng vấn thử":"mock interviews",
   "Theo chủ đề":"By topic", "Điểm trung bình 5 lần chấm gần nhất, gồm cả luyện trả lời và phỏng vấn thử.":"Average of the 5 most recent scores, from practice and mock interviews.",
-  "Chưa có điểm":"No score yet", "Theo JD":"By JD", "Mục tiêu chung":"General goal", "Lịch sử phỏng vấn":"Interview history",
+  "Chưa có điểm":"No score yet", "Theo JD":"By JD", "Mục tiêu chung":"General goal", "Lịch sử phỏng vấn":"Interview history", "Cài đặt":"Settings", "Kiến thức":"Knowledge",
   "Trọn quy trình":"Full loop", "Chưa có buổi phỏng vấn nào.":"No interviews yet.", "Xóa toàn bộ tiến độ":"Delete all progress",
-  "Bấm lần nữa để xóa vĩnh viễn":"Click again to delete permanently", "← Tiến độ":"← Progress",
+  "Bấm lần nữa để xóa vĩnh viễn":"Click again to delete permanently",
   "Không tìm thấy buổi phỏng vấn này.":"Interview not found.",
+  "Đồng bộ Google Drive":"Google Drive sync", "Đồng bộ ngay":"Sync now", "Tắt đồng bộ":"Turn off sync", "Kết nối Google Drive":"Connect Google Drive",
+  "Bấm lần nữa để tắt đồng bộ":"Click again to turn off sync", "Đang đồng bộ…":"Syncing…", "Chưa bật.":"Not enabled.",
+  "Lưu tiến độ học và lịch sử phỏng vấn vào Google Drive của bạn để dùng trên nhiều máy, nhiều trình duyệt. Dữ liệu nằm trong thư mục ẩn của app, không hiện trong Drive.":"Save your study progress and interview history to your Google Drive to use it across devices and browsers. The data lives in the app's hidden folder and doesn't show in Drive.",
+  "Tạo OAuth Client ID loại Web application trong Google Cloud Console, bật Google Drive API và thêm địa chỉ đang mở app vào Authorized JavaScript origins. Không dùng được khi mở trực tiếp file:// — hãy mở qua http://localhost hoặc một trang web.":"Create a Web application OAuth Client ID in Google Cloud Console, enable the Google Drive API and add the address you open the app from to Authorized JavaScript origins. It doesn't work when opening file:// directly — open it via http://localhost or a website.",
+  "Bấm Đồng bộ ngay để đăng nhập Google và tải tiến độ mới nhất.":"Click Sync now to sign in to Google and load your latest progress.",
+  "Google Drive đang bật nhưng chưa đồng bộ trong phiên này.":"Google Drive is on but hasn't synced this session.",
+  "Tiến độ được lưu trên trình duyệt này và đồng bộ với Google Drive.":"Progress is saved in this browser and synced with Google Drive.",
+  "Trình duyệt chặn cửa sổ đăng nhập Google":"The browser blocked the Google sign-in window", "Chưa đăng nhập Google":"Not signed in to Google",
+  "Phiên Google đã hết hạn, bấm Đồng bộ ngay để đăng nhập lại":"Google session expired, click Sync now to sign in again",
+  "Không tải được Google Identity Services":"Couldn't load Google Identity Services",
   "Chuyển sang tiếng Việt":"Chuyển sang tiếng Việt"
 };
 const I18N_PATTERNS = [
@@ -2373,7 +2502,9 @@ const I18N_PATTERNS = [
   [/^(\d+) buổi, gần nhất (\d+)$/, (m, a, b) => `${a} session${a === "1" ? "" : "s"}, latest ${b}`],
   [/^(.*?)(\d+)\/(\d+) vòng$/, (m, a, b, c) => `${a}${b}/${c} rounds`],
   [/^Giả lập theo (\d+) JD đã lưu, hoặc thêm JD mới$/, (m, a) => `Simulate for ${a} saved JD${a === "1" ? "" : "s"}, or add a new one`],
-  [/^Có (\d+) thẻ đến hạn trong chủ đề này\.$/, (m, a) => `${a} cards due in this topic.`]
+  [/^Có (\d+) thẻ đến hạn trong chủ đề này\.$/, (m, a) => `${a} cards due in this topic.`],
+  [/^Đã đồng bộ lúc (.+)$/, (m, a) => `Synced at ${a}`],
+  [/^Google Drive lỗi (\d+)$/, (m, a) => `Google Drive error ${a}`]
 ];
 
 render();
