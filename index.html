@@ -89,6 +89,17 @@ main{max-width:920px;margin:0 auto;padding:28px 20px 64px}
 select,input[type=text],input[type=password],textarea{width:100%;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
 textarea{resize:vertical;min-height:140px;line-height:1.55}
 select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
+.guide{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.guide summary{cursor:pointer;padding:12px 0;font-weight:500;list-style:none;display:flex;align-items:center;gap:8px}
+.guide summary::-webkit-details-marker{display:none}
+.guide summary::after{content:"+";color:var(--ink-2);font-weight:400;margin-left:auto}
+.guide[open] summary::after{content:"–"}
+.guide > div{padding:0 0 10px}
+.guide p,.guide li{font-size:.88rem;line-height:1.6}
+.guide p{margin:0 0 8px}
+.guide ol,.guide ul{padding-left:20px;margin:0 0 8px}
+.guide code{background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:.82rem;word-break:break-all}
+.linkbtn{border:0;background:none;padding:0 2px;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}
 .ai-form{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr) auto;gap:10px}
 @media (max-width:520px){.ai-form{grid-template-columns:1fr}}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
@@ -861,10 +872,58 @@ function gdPanel(){
     <p class="small muted">Lưu tiến độ học, lịch sử phỏng vấn và Gemini API key vào Google Drive của bạn để dùng trên nhiều máy, nhiều trình duyệt. Dữ liệu nằm trong thư mục ẩn của app, không hiện trong Drive.</p>
     ${cid ? `<p class="small ${GD.err ? "note err" : ""}" role="status">${esc(gdStatus())}</p>
       <div class="row"><button class="btn primary" data-act="gd-sync" ${GD.busy ? "disabled" : ""}>Đồng bộ ngay</button><button class="btn ghost danger" data-act="gd-off">Tắt đồng bộ</button></div>`
-    : `<label><span class="label">Google OAuth Client ID</span><input type="text" id="gd-cid" autocomplete="off" placeholder="1234-abc.apps.googleusercontent.com"></label>
-      <p class="small muted">Tạo OAuth Client ID loại Web application trong Google Cloud Console, bật Google Drive API và thêm địa chỉ đang mở app vào Authorized JavaScript origins. Không dùng được khi mở trực tiếp file:// — hãy mở qua http://localhost hoặc một trang web.</p>
+    : `${location.protocol === "file:" ? `<p class="small note err">${isEn() ? "Drive sync doesn't work when the app is opened as a file (file://). Open it via http://localhost (serve.sh) or a website." : "Đồng bộ Drive không chạy khi mở app dạng file (file://). Hãy mở qua http://localhost (serve.sh) hoặc một trang web."}</p>` : ""}
+      ${gdGuide()}
+      <label><span class="label">Google OAuth Client ID</span><input type="text" id="gd-cid" autocomplete="off" placeholder="1234-abc.apps.googleusercontent.com"></label>
       <div><button class="btn primary" data-act="gd-connect">Kết nối Google Drive</button></div>`}
   </section>`;
+}
+// Hướng dẫn từng bước, viết sẵn hai ngôn ngữ (translateDom không dịch được HTML nhiều đoạn).
+function guideBox(title, body){ return `<details class="guide"><summary>ℹ️ ${title}</summary><div>${body}</div></details>`; }
+function keyGuide(){
+  return guideBox(isEn() ? "How to get a free Gemini key" : "Cách lấy Gemini key (miễn phí)", isEn() ? `
+    <ol><li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in</li>
+    <li>Click <b>Create API key</b> and copy it (starts with <code>AIza…</code>)</li>
+    <li>Paste it into <b>Gemini API key</b> below → <b>Save</b></li></ol>
+    <p>The model box is optional. Leave it empty to use <code>${DEFAULT_MODEL}</code>.</p>
+    <p>🔒 Everyone should use their own key. It stays in this browser (and your Drive if sync is on).</p>` : `
+    <ol><li>Mở <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, đăng nhập Gmail</li>
+    <li>Bấm <b>Create API key</b>, copy key (bắt đầu bằng <code>AIza…</code>)</li>
+    <li>Dán vào ô <b>Gemini API key</b> bên dưới → <b>Lưu</b></li></ol>
+    <p>Ô model không bắt buộc. Để trống sẽ dùng <code>${DEFAULT_MODEL}</code>.</p>
+    <p>🔒 Mỗi người dùng key riêng. Key chỉ lưu trên trình duyệt này (và Drive nếu bật đồng bộ).</p>`);
+}
+function gdGuide(){
+  const o = esc(location.origin);
+  return guideBox(isEn() ? "How to set it up" : "Cách thiết lập", isEn() ? `
+    <p><b>🔑 Create a Client ID</b> <span class="muted">— once, free, ~5 min</span></p>
+    <ol><li><b>Create a project</b>: open <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud</a> → any name → <b>Create</b></li>
+    <li><b>Turn on the Drive API</b>: open <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Google Drive API</a> → <b>Enable</b></li>
+    <li><b>Set up the app</b>: open <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener">Google Auth Platform</a> → <b>Get started</b> → enter an app name and your Gmail → pick <b>External</b> → <b>Create</b></li>
+    <li><b>Add your Gmail</b>: <b>Audience</b> → <b>Test users</b> → <b>Add users</b></li>
+    <li><b>Create the client</b>: <b>Clients</b> → <b>Create client</b> → <b>Web application</b> → <b>Authorized JavaScript origins</b> → <b>Add URI</b>, paste <code style="white-space:nowrap">${o}</code> <button class="linkbtn" data-act="copy" data-text="${o}">📋 Copy</button> → <b>Create</b></li>
+    <li><b>Copy the Client ID</b> it shows (ends in <code>.apps.googleusercontent.com</code>)</li></ol>
+    <p><b>🔗 Connect</b></p>
+    <ol><li>Paste the Client ID into the box below → <b>Connect Google Drive</b></li>
+    <li>Google says <i>“hasn't verified this app”</i> → <b>Continue</b> (it's your own app)</li>
+    <li>Other devices: paste the <b>same Client ID</b>, sign in with the <b>same Gmail</b></li></ol>
+    <p><b>🛠 Something wrong?</b></p>
+    <ul><li><b>Error 400 / access blocked</b>: check 🔑 step 4 (Gmail added) and step 5 (the address must match, no trailing <code>/</code>). After fixing, wait a few minutes.</li>
+    <li><b>Opened as a file (file://)</b>: Google doesn't allow it. Open the app via http://localhost or a website.</li></ul>` : `
+    <p><b>🔑 Tạo Client ID</b> <span class="muted">— làm một lần, miễn phí, ~5 phút</span></p>
+    <ol><li><b>Tạo project</b>: mở <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud</a> → đặt tên tuỳ ý → <b>Create</b></li>
+    <li><b>Bật Drive API</b>: mở <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Google Drive API</a> → <b>Enable</b></li>
+    <li><b>Khai báo app</b>: mở <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener">Google Auth Platform</a> → <b>Get started</b> → nhập tên app và Gmail của bạn → chọn <b>External</b> → <b>Create</b></li>
+    <li><b>Thêm Gmail của bạn</b>: <b>Audience</b> → <b>Test users</b> → <b>Add users</b></li>
+    <li><b>Tạo client</b>: <b>Clients</b> → <b>Create client</b> → <b>Web application</b> → <b>Authorized JavaScript origins</b> → <b>Add URI</b>, dán <code style="white-space:nowrap">${o}</code> <button class="linkbtn" data-act="copy" data-text="${o}">📋 Chép</button> → <b>Create</b></li>
+    <li><b>Copy Client ID</b> vừa hiện ra (đuôi <code>.apps.googleusercontent.com</code>)</li></ol>
+    <p><b>🔗 Kết nối</b></p>
+    <ol><li>Dán Client ID vào ô bên dưới → <b>Kết nối Google Drive</b></li>
+    <li>Google báo <i>“hasn't verified this app”</i> → <b>Continue</b> (đây là app của chính bạn)</li>
+    <li>Máy khác: dán <b>cùng Client ID</b>, đăng nhập <b>cùng Gmail</b></li></ol>
+    <p><b>🛠 Gặp lỗi?</b></p>
+    <ul><li><b>Error 400 / access blocked</b>: xem lại 🔑 bước 4 (đã thêm Gmail chưa) và bước 5 (địa chỉ phải khớp, không có <code>/</code> ở cuối). Sửa xong đợi vài phút.</li>
+    <li><b>Mở dạng file (file://)</b>: Google không cho phép. Hãy mở app qua http://localhost hoặc một trang web.</li></ul>`);
 }
 function gdPaint(){
   const el = document.getElementById("gd-panel"); if(!el) return;
@@ -1104,6 +1163,7 @@ function vSettings(){
     ${getKey() ? `<p class="small">Đã lưu Gemini API key. Model đang dùng: <b>${esc(getModel() || DEFAULT_MODEL)}</b>.</p>
       <div class="row"><button class="btn ghost danger" data-act="key-remove">Xóa API key</button></div>`
     : `<p class="small muted">Chấm điểm, phỏng vấn thử, tạo đề và hỏi thêm cần Gemini API key, lấy miễn phí tại aistudio.google.com.</p>
+      ${keyGuide()}
       <div class="ai-form">
         <input type="password" id="api-key" autocomplete="off" placeholder="Gemini API key" aria-label="Gemini API key">
         <input type="text" id="api-model" autocomplete="off" placeholder="${DEFAULT_MODEL}" value="${esc(getModel())}" aria-label="Model (không bắt buộc)" title="Model (không bắt buộc)">
@@ -2108,6 +2168,7 @@ document.addEventListener("click", e => {
     case "ask-lesson": askLesson((document.getElementById("la-q") || {}).value || LA.q); break;
     case "key-save": { const v = ((document.getElementById("api-key") || {}).value || "").trim(); const mdl = ((document.getElementById("api-model") || {}).value || "").trim(); if(v) setApiKey(v, mdl); render(); break; }
     case "key-remove": if(!arm(a, "Bấm lần nữa để xóa key")) break; setApiKey("", ""); render(); break;
+    case "copy": { const old = a.textContent; navigator.clipboard?.writeText(d.text).then(() => { a.textContent = isEn() ? "✓ Copied" : "✓ Đã chép"; setTimeout(() => { if(a.isConnected) a.textContent = old; }, 1500); }).catch(() => {}); break; }
     case "toggle-lang": S.profile.uiLang = isEn() ? "vi" : "en"; S.profile.lang = S.profile.uiLang; save(); render(); break;
     case "gen-lesson": genLesson(); break;
     case "open-gen": GL.err = ""; go("newlesson", {topic: d.topic || ""}); setTimeout(() => { const el = document.getElementById("gl-subject"); if(el) el.focus(); }, 0); break;
@@ -2679,7 +2740,6 @@ const I18N_DICT = {
   "Đồng bộ Google Drive":"Google Drive sync", "Đồng bộ ngay":"Sync now", "Tắt đồng bộ":"Turn off sync", "Kết nối Google Drive":"Connect Google Drive",
   "Bấm lần nữa để tắt đồng bộ":"Click again to turn off sync", "Đang đồng bộ…":"Syncing…", "Chưa bật.":"Not enabled.",
   "Lưu tiến độ học, lịch sử phỏng vấn và Gemini API key vào Google Drive của bạn để dùng trên nhiều máy, nhiều trình duyệt. Dữ liệu nằm trong thư mục ẩn của app, không hiện trong Drive.":"Save your study progress, interview history and Gemini API key to your Google Drive to use it across devices and browsers. The data lives in the app's hidden folder and doesn't show in Drive.",
-  "Tạo OAuth Client ID loại Web application trong Google Cloud Console, bật Google Drive API và thêm địa chỉ đang mở app vào Authorized JavaScript origins. Không dùng được khi mở trực tiếp file:// — hãy mở qua http://localhost hoặc một trang web.":"Create a Web application OAuth Client ID in Google Cloud Console, enable the Google Drive API and add the address you open the app from to Authorized JavaScript origins. It doesn't work when opening file:// directly — open it via http://localhost or a website.",
   "Bấm Đồng bộ ngay để đăng nhập Google và tải tiến độ mới nhất.":"Click Sync now to sign in to Google and load your latest progress.",
   "Google Drive đang bật nhưng chưa đồng bộ trong phiên này.":"Google Drive is on but hasn't synced this session.",
   "Tiến độ được lưu trên trình duyệt này và đồng bộ với Google Drive.":"Progress is saved in this browser and synced with Google Drive.",
