@@ -56,7 +56,7 @@ a{color:var(--blue)}
 .brand-mark{width:28px;height:28px;border-radius:8px;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;font-size:.95rem;transform:rotate(-4deg)}
 .nav{display:flex;gap:4px;margin-left:auto}
 .nav button{border:0;background:none;padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--ink-2);font-weight:500}
-.nav button[aria-current="page"]{background:var(--primary);color:var(--on-primary)}
+.nav button[aria-current="page"]{background:var(--blue-soft);color:var(--blue);font-weight:600}
 .nav .ico{display:none}
 main{max-width:920px;margin:0 auto;padding:28px 20px 64px}
 @media (max-width:719px){
@@ -162,12 +162,29 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 
 /* Results */
 .verdict{display:flex;align-items:center;gap:18px;padding:18px 20px;border-radius:16px;background:var(--vbg);color:var(--ink)}
-.verdict .num{font-family:var(--display);font-size:2.6rem;font-weight:700;line-height:1;color:var(--vc)}
+.verdict .num{font-family:var(--display);font-size:2.6rem;font-weight:700;line-height:1;color:var(--vc);white-space:nowrap}
+.verdict .num small{font-size:.9rem;font-weight:500;opacity:.75;margin-left:2px}
+.verdict .vsum{font-size:.95rem;line-height:1.55}
+.verdict .vbody{display:flex;flex-direction:column;gap:4px;min-width:0}
+@media (max-width:520px){
+  .verdict{flex-direction:column;align-items:flex-start;gap:8px;padding:16px}
+}
+.eval h3{font-size:1.02rem;font-weight:700}
+.eval .panel>h3{margin-bottom:6px}
+.crit .c-name{font-weight:500}
+.crit b .muted{font-weight:400;font-size:.8em}
+.fb>h3{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.fb>h3::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--dot,var(--blue))}
+.fb-good{--dot:var(--green)} .fb-improve{--dot:var(--amber)} .fb-missing{--dot:var(--red)}
+.fb .list{font-size:.95rem}
+.fb .list li+li{margin-top:8px}
+.fb-outline .list{margin-bottom:10px}
+.fb-grid{align-items:stretch}
 .verdict .vt{font-family:var(--display);font-weight:700;font-size:1.2rem;color:var(--vc)}
-.crit{display:grid;grid-template-columns:minmax(0,1fr) 120px 40px;gap:4px 14px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.crit{display:grid;grid-template-columns:minmax(0,1fr) 120px 48px;gap:4px 14px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
 .crit:first-of-type{border-top:0}
 .crit .c-comment{grid-column:1/-1;font-size:.9rem;color:var(--ink-2)}
-.crit b{font-family:var(--display);text-align:right}
+.crit b{font-family:var(--display);text-align:right;white-space:nowrap}
 .list{margin:0;padding-left:1.2em}
 .list li+li{margin-top:6px}
 .outline{background:var(--surface-2);border-radius:12px;padding:14px 16px;font-size:.95rem}
@@ -223,6 +240,16 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 .optrev li{padding:4px 8px;border-radius:8px}
 .optrev .right{background:var(--green-soft)}
 .optrev .wrong{background:var(--red-soft)}
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px 20px}
+.page-actions{flex:none}
+@media (max-width:520px){.page-actions{flex:1 1 100%;flex-wrap:nowrap}.page-actions .btn{flex:1 1 0;padding-inline:10px}.page-actions .btn.primary{order:-1}}
+.note-act{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 10px 10px 14px}
+.note-act>span{flex:1 1 200px}
+.note-act .btn{min-height:38px;padding:6px 16px}
+.qz-early{min-height:32px;padding:4px 10px;font-size:.88rem}
+.qz-nav .btn.primary{min-width:140px}
+.qexp{margin-top:6px;background:var(--blue-soft);border-radius:10px;padding:10px 14px;font-size:.92rem;line-height:1.55}
+.qexp-l{font-weight:600;color:var(--blue);font-size:.8rem;letter-spacing:.02em;margin-bottom:2px}
 
 /* Lessons */
 .llist{list-style:none;margin:0;padding:0;display:grid;gap:10px}
@@ -246,6 +273,7 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 .trgs{display:grid;gap:8px}
 .trg{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:14px;padding:4px 6px 4px 2px;background:var(--surface)}
 .trg.on{border-color:var(--blue);background:var(--blue-soft)}
+.trg-act{gap:2px;flex-wrap:nowrap}
 .trg-pick{flex:1;min-width:0;display:flex;gap:12px;align-items:center;text-align:left;background:none;border:0;cursor:pointer;padding:10px;color:var(--ink)}
 .radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--ink-2);flex:none}
 .trg.on .radio{border-color:var(--blue);background:var(--blue);box-shadow:inset 0 0 0 3px var(--blue-soft)}
@@ -268,6 +296,17 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
   .postit .back{font-size:1rem}
   .verdict .num{font-size:2.2rem}
   .nav button{font-size:.78rem}
+  /* Dòng điểm: tên và điểm ở hàng trên, thanh điểm chạy hết chiều ngang ở hàng dưới */
+  .crit{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}
+  .crit>:first-child{grid-column:1;grid-row:1}
+  .crit>b,.crit>.small.muted{grid-column:2;grid-row:1}
+  .crit>.bar{grid-column:1/-1;grid-row:2}
+  .crit .c-comment{grid-row:3}
+  /* JD: nút Sửa, Xóa xuống dòng dưới tên để tên không bị ép */
+  .trg{flex-wrap:wrap;padding-bottom:6px}
+  .trg-pick{flex:1 1 100%;padding-bottom:2px}
+  .trg-act{margin-left:38px}
+  .trg-act .btn{min-height:34px;padding:4px 10px;font-size:.9rem}
 }
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -1103,7 +1142,7 @@ function effectiveProfile(){
 function targetRow(id, name, role, level, company, hasJd){
   const on = (S.profile.activeJd || "") === id;
   return `<div class="trg${on ? " on" : ""}"><button class="trg-pick" data-act="pick-target" data-id="${id}" aria-pressed="${on}"><span class="radio" aria-hidden="true"></span><span><b>${esc(name)}</b><br><span class="small muted">${esc(ROLES[role].name)}, ${esc(LEVELS[level])}, ${esc(COMPANY_SHORT[company])}${hasJd ? "" : ", theo mục tiêu học tập"}</span></span></button>
-    ${id ? `<span class="row" style="gap:2px;flex-wrap:nowrap"><button class="btn ghost" data-act="edit-target" data-id="${id}">Sửa</button><button class="btn ghost danger" data-act="del-jd" data-id="${id}">Xóa</button></span>` : ""}</div>`;
+    ${id ? `<span class="row trg-act"><button class="btn ghost" data-act="edit-target" data-id="${id}">Sửa</button><button class="btn ghost danger" data-act="del-jd" data-id="${id}">Xóa</button></span>` : ""}</div>`;
 }
 function homeTargetHtml(){
   const p = S.profile;
@@ -1322,7 +1361,7 @@ function vPractice(){
       <textarea id="pr-answer" placeholder="Trả lời như đang nói với người phỏng vấn. Nên có cấu trúc: làm rõ, phân tích, đề xuất, đo lường." ${loading ? "disabled" : ""}>${esc(PR.answer)}</textarea>
       ${micNote("pr-answer")}
       <div class="row"><button class="btn primary" data-act="grade" ${loading ? "disabled" : ""}>${loading ? "Đang chấm…" : PR.result ? "Chấm lại" : "Chấm điểm bằng AI"}</button>${loading ? "" : micBtn("pr-answer")}
-      ${q.k.length ? "" : "<!--"}<button class="btn ghost" data-act="toggle-keys">${PR.showKeys ? "Ẩn gợi ý" : "Xem gợi ý ý chính"}</button>${q.k.length ? "" : "-->"}</div>
+      ${q.k.length ? "" : "<!--"}<button class="btn" data-act="toggle-keys" aria-pressed="${PR.showKeys}">${PR.showKeys ? "Ẩn gợi ý" : "Gợi ý"}</button>${q.k.length ? "" : "-->"}</div>
     </div>
     ${PR.showKeys && q.k.length ? `<div class="outline"><p class="small muted" style="margin-bottom:6px">Câu trả lời tốt thường có</p><ul class="list">${q.k.map(k => `<li>${esc(k)}</li>`).join("")}</ul></div>` : ""}
     ${loading ? `<p class="thinking">AI đang đọc và chấm theo ${RUBRICS[t.id].length} tiêu chí. Thường mất 15 đến 40 giây.</p>` : ""}
@@ -1384,18 +1423,30 @@ Chỉ trả về JSON: {"q":"câu hỏi","k":["3 đến 5 ý chính một câu t
 }
 
 /* ---------- Shared evaluation view ---------- */
+function fbPanel(title, items, tone){
+  return items.length ? `<section class="panel fb fb-${tone}"><h3>${title}</h3><ul class="list">${items.map(x => `<li>${esc(x)}</li>`).join("")}</ul></section>` : "";
+}
+// Dàn ý AI trả về dạng "- Ý: giải thích" mỗi dòng: hiện thành danh sách, phần trước dấu hai chấm in đậm
+function outlineHtml(text){
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const bullet = l => /^[-•*]\s*/.test(l);
+  if(lines.filter(bullet).length < Math.max(2, lines.length / 2)) return `<div class="prewrap">${esc(text)}</div>`;
+  return `<ul class="list">${lines.map(l => {
+    const t = l.replace(/^[-•*]\s*/, ""), i = t.indexOf(":");
+    return `<li>${i > 0 && i < 48 ? `<b>${esc(t.slice(0, i + 1))}</b>${esc(t.slice(i + 1))}` : esc(t)}</li>`;
+  }).join("")}</ul>`;
+}
 function renderEval(r, opts){
   opts = opts || {};
   const vc = scoreColor(r.overall);
-  return `<div class="verdict" style="--vbg:${scoreSoft(r.overall)};--vc:${vc}"><span class="num">${r.overall}</span><span><span class="vt">${VERDICT_TEXT[r.verdict]}</span><br><span class="small">${esc(r.summary)}</span></span></div>
-  ${r.scores.length ? `<div class="panel"><h3 style="margin-bottom:6px">Điểm theo tiêu chí</h3>${r.scores.map(s => `<div class="crit"><span>${esc(s.criterion)}</span>${bar(s.score * 20)}<b>${s.n ? s.right + "/" + s.n : s.score}</b>${s.comment ? `<span class="c-comment">${esc(s.comment)}</span>` : ""}</div>`).join("")}</div>` : ""}
-  <div class="grid2" style="align-items:start">
-    ${r.strengths.length ? `<div class="stack" style="--gap:8px"><h3>Làm tốt</h3><ul class="list">${r.strengths.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
-    ${r.improvements.length ? `<div class="stack" style="--gap:8px"><h3>Cần cải thiện</h3><ul class="list">${r.improvements.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
-  </div>
-  ${r.missing.length ? `<div class="stack" style="--gap:8px"><h3>Ý còn thiếu</h3><ul class="list">${r.missing.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
-  ${r.betterAnswer ? `<div class="stack" style="--gap:8px"><h3>Dàn ý tham khảo</h3><div class="outline prewrap">${esc(r.betterAnswer)}</div><p class="small muted">Đây là một cách tiếp cận, không phải đáp án duy nhất.</p></div>` : ""}
-  ${!opts.practice && r.weakTopics.length ? `<div class="stack" style="--gap:8px"><h3>Nên ôn tiếp</h3><div class="chips">${r.weakTopics.map(t => `<button class="chip" data-act="open-topic" data-topic="${t}">${esc(TOPIC[t].name)}</button>`).join("")}</div></div>` : ""}`;
+  return `<div class="stack eval" style="--gap:16px">
+  <div class="verdict" style="--vbg:${scoreSoft(r.overall)};--vc:${vc}"><span class="num">${r.overall}<small>/100</small></span><span class="vbody"><span class="vt">${VERDICT_TEXT[r.verdict]}</span>${r.summary ? `<span class="vsum">${esc(r.summary)}</span>` : ""}</span></div>
+  ${r.scores.length ? `<section class="panel"><h3>Điểm theo tiêu chí</h3>${r.scores.map(s => `<div class="crit"><span class="c-name">${esc(s.criterion)}</span>${bar(s.score * 20)}<b>${s.n ? s.right + "/" + s.n : `${s.score}<span class="muted">/5</span>`}</b>${s.comment ? `<span class="c-comment">${esc(s.comment)}</span>` : ""}</div>`).join("")}</section>` : ""}
+  ${r.strengths.length || r.improvements.length ? `<div class="grid2 fb-grid">${fbPanel("Làm tốt", r.strengths, "good")}${fbPanel("Cần cải thiện", r.improvements, "improve")}</div>` : ""}
+  ${fbPanel("Ý còn thiếu", r.missing, "missing")}
+  ${r.betterAnswer ? `<section class="panel fb fb-outline"><h3>Dàn ý tham khảo</h3>${outlineHtml(r.betterAnswer)}<p class="small muted">Đây là một cách tiếp cận, không phải đáp án duy nhất.</p></section>` : ""}
+  ${!opts.practice && !opts.noTopics && r.weakTopics.length ? `<section class="stack" style="--gap:10px"><h3>Nên ôn tiếp</h3><div class="chips">${r.weakTopics.map(t => `<button class="chip" data-act="open-topic" data-topic="${t}">${esc(TOPIC[t].name)}</button>`).join("")}</div></section>` : ""}
+  </div>`;
 }
 
 /* ================= AI-GENERATED LESSONS ================= */
@@ -1635,15 +1686,16 @@ function submitQuiz(){
 }
 function quizBody(){
   const q = QZ.questions[QZ.idx], n = QZ.questions.length, picked = QZ.answers[QZ.idx];
-  const letters = "ABCD";
+  const letters = "ABCD", answered = Object.keys(QZ.answers).length, last = QZ.idx === n - 1, ready = last || answered === n;
   return `<div class="stack" style="--gap:18px">
-    <div class="row"><span class="small muted">Câu ${QZ.idx + 1}/${n}, ${esc(catName(q.c, QZ.topic))}</span><span class="spacer"></span><span class="timer" id="qz-timer">${fmtClock(quizRemaining())}</span></div>
+    <div class="row"><span class="small muted">Câu ${QZ.idx + 1}/${n}, ${esc(catName(q.c, QZ.topic))}</span><span class="spacer"></span><span class="timer" id="qz-timer">${fmtClock(quizRemaining())}</span>${ready ? "" : `<button class="btn ghost qz-early" data-act="qz-submit">Nộp bài sớm</button>`}</div>
     <div class="qdots" aria-label="Danh sách câu hỏi">${QZ.questions.map((_, i) => `<button class="qdot${i === QZ.idx ? " now" : ""}${QZ.answers[i] !== undefined ? " done" : ""}" data-act="qz-go" data-i="${i}" aria-label="Câu ${i + 1}${QZ.answers[i] !== undefined ? ", đã trả lời" : ""}">${i + 1}</button>`).join("")}</div>
     <h2 style="font-weight:500;font-size:1.25rem;line-height:1.4">${esc(q.q)}</h2>
     <div class="opts" role="radiogroup">${q.o.map((o, i) => `<button class="opt" role="radio" aria-checked="${picked === i}" data-act="qz-pick" data-i="${i}"><span class="opt-l">${letters[i]}</span><span>${esc(o)}</span></button>`).join("")}</div>
-    <div class="row"><button class="btn" data-act="qz-go" data-i="${QZ.idx - 1}" ${QZ.idx === 0 ? "disabled" : ""}>Câu trước</button>
-      ${QZ.idx < n - 1 ? `<button class="btn" data-act="qz-go" data-i="${QZ.idx + 1}">Câu sau</button>` : ""}
-      <span class="spacer"></span><button class="btn primary" data-act="qz-submit">Nộp bài${Object.keys(QZ.answers).length < n ? ` (${Object.keys(QZ.answers).length}/${n})` : ""}</button></div>
+    <div class="row qz-nav"><button class="btn ghost" data-act="qz-go" data-i="${QZ.idx - 1}" ${QZ.idx === 0 ? "disabled" : ""}><span aria-hidden="true">←</span> Câu trước</button>
+      <span class="spacer"></span>
+      ${ready && !last ? `<button class="btn" data-act="qz-go" data-i="${QZ.idx + 1}">Câu sau</button>` : ""}
+      ${ready ? `<button class="btn primary" data-act="qz-submit">Nộp bài${answered < n ? ` (${answered}/${n})` : ""}</button>` : `<button class="btn primary" data-act="qz-go" data-i="${QZ.idx + 1}">Câu sau <span aria-hidden="true">→</span></button>`}</div>
   </div>`;
 }
 function quizReview(qz){
@@ -1652,7 +1704,7 @@ function quizReview(qz){
     const mine = qz.answers[i], ok = mine === q.a;
     return `<div class="qrev ${ok ? "ok" : "bad"}"><p class="small muted">Câu ${i + 1}. ${ok ? "Đúng" : mine === undefined ? "Bỏ trống" : "Sai"}</p><p style="font-weight:500">${esc(q.q)}</p>
       <ul class="optrev">${q.o.map((o, j) => `<li class="${j === q.a ? "right" : j === mine ? "wrong" : ""}"><b>${letters[j]}.</b> ${esc(o)}${j === q.a ? " ✓" : j === mine ? " ✗" : ""}</li>`).join("")}</ul>
-      ${q.x ? `<p class="small">${esc(q.x)}</p>` : ""}</div>`;
+      ${q.x ? `<div class="qexp"><p class="qexp-l">Giải thích</p><p>${esc(q.x)}</p></div>` : ""}</div>`;
   }).join("")}</div>`;
 }
 function vQuiz(){
@@ -1682,10 +1734,11 @@ function quizTab(t){
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 let MIC = null, micErr = "";
 const MIC_SVG = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+const STOP_SVG = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="currentColor"/></svg>';
 function micBtn(target){
   if(!SpeechRec) return "";
   const on = !!(MIC && MIC.target === target);
-  return `<button class="btn mic${on ? " on" : ""}" data-act="mic" data-target="${target}" aria-pressed="${on}" title="Trả lời bằng giọng nói">${MIC_SVG}${on ? "Dừng" : "Trả lời"}</button>`;
+  return `<button class="btn mic${on ? " on" : ""}" data-act="mic" data-target="${target}" aria-pressed="${on}" title="${on ? "Dừng ghi âm" : "Trả lời bằng giọng nói"}">${on ? STOP_SVG : MIC_SVG}${on ? "Dừng" : "Trả lời"}</button>`;
 }
 function micNote(target){ return micErr && (!MIC || MIC.target === target) ? `<p class="note err">${esc(micErr)}</p>` : ""; }
 function stopMic(){ if(MIC){ const r = MIC.rec; MIC = null; try{ r.stop(); }catch(e){} } }
@@ -1870,7 +1923,7 @@ function scrollBottom(){ requestAnimationFrame(() => window.scrollTo(0, document
 function vRoom(){
   const r = curRound(), total = 1 + IV.followups;
   const steps = IV.rounds.map((rid, i) => { const res = IV.results.find(x => x.roundId === rid && i <= IV.idx); const cls = res ? (res.eval.verdict === "fail" ? "fail" : "pass") : i === IV.idx ? "now" : ""; return `<span class="step ${cls}">${esc(ROUNDS[rid].name)}</span>`; }).join("");
-  const head = `<div class="room-head"><div class="stack" style="--gap:4px"><h1 style="font-size:1.5rem">${esc(r.name)}</h1><span class="small muted">${r.kind === "quiz" ? `${QUIZ_SIZE} câu trắc nghiệm, ${QUIZ_MIN} phút` : esc(r.who) + ", " + esc(r.title) + "."} ${IV.status === "roundDone" || IV.status === "finished" || r.kind === "quiz" ? "" : `Câu ${Math.min(IV.answers + 1, total)}/${total}`}</span></div><span class="spacer"></span><button class="btn ghost danger" data-act="iv-leave">Rời phòng</button></div>
+  const head = `<div class="room-head"><div class="stack" style="--gap:4px"><h1 style="font-size:1.5rem">${esc(r.name)}</h1><span class="small muted">${r.kind === "quiz" ? `${QUIZ_SIZE} câu trắc nghiệm, ${QUIZ_MIN} phút` : esc(r.who) + ", " + esc(r.title) + "."} ${IV.status === "roundDone" || IV.status === "finished" || r.kind === "quiz" ? "" : `Câu ${Math.min(IV.answers + 1, total)}/${total}`}</span></div><span class="spacer"></span><button class="btn ghost danger" data-act="iv-leave">Hủy</button></div>
     ${IV.rounds.length > 1 ? `<div class="steps">${steps}</div>` : ""}`;
   if(IV.status === "finished") return vFinal();
   if(IV.status === "quiz" && QZ) return `<div class="stack" style="--gap:16px">${head}${quizBody()}</div>`;
@@ -1896,13 +1949,13 @@ function vRoom(){
       <div class="row"><label class="label" for="iv-answer" style="margin:0">Câu trả lời của bạn</label><span class="spacer"></span><span class="timer" id="iv-timer"></span></div>
       <textarea id="iv-answer" placeholder="Trả lời hoặc hỏi lại để làm rõ. Ctrl + Enter để gửi.">${esc(IV.draft)}</textarea>
       ${micNote("iv-answer")}
-      <div class="row"><button class="btn primary" data-act="iv-send">Gửi câu trả lời</button>${micBtn("iv-answer")}${IV.hint && IV.hint.turn === IV.turns.length ? "" : `<button class="btn" data-act="iv-hint">Gợi ý</button>`}${IV.answers >= 1 ? `<button class="btn ghost" data-act="iv-end">Kết thúc vòng và chấm điểm</button>` : ""}</div></div>`;
+      <div class="row"><button class="btn primary" data-act="iv-send">Gửi câu trả lời</button>${micBtn("iv-answer")}${IV.hint && IV.hint.turn === IV.turns.length ? "" : `<button class="btn" data-act="iv-hint">Gợi ý</button>`}${IV.answers >= 1 ? `<button class="btn" data-act="iv-end" title="Bỏ qua các câu hỏi vặn còn lại và chấm vòng này">Chấm điểm ngay</button>` : ""}</div></div>`;
   } else if(asking){
     composer = `<div class="row"><button class="btn ghost" data-act="iv-stop">Dừng</button></div>`;
   } else if(IV.status === "error"){
-    composer = `<p class="note err">${esc(IV.err)}</p><div class="row"><button class="btn primary" data-act="iv-retry">Hỏi lại</button></div>`;
+    composer = `<div class="note err note-act" role="alert"><span>${esc(IV.err)}</span><button class="btn primary" data-act="iv-retry">Hỏi lại</button></div>`;
   } else if(IV.status === "evalError"){
-    composer = `<p class="note err">${esc(IV.err)}</p><div class="row"><button class="btn primary" data-act="iv-reeval">Chấm lại</button></div>`;
+    composer = `<div class="note err note-act" role="alert"><span>${esc(IV.err)}</span><button class="btn primary" data-act="iv-reeval">Chấm lại</button></div>`;
   }
   return `<div class="stack" style="--gap:16px">${head}
     <div class="chat" aria-live="polite">${chatHtml(IV.turns, r)}${tail}${IV.status === "answer" ? hintHtml() : ""}</div>
@@ -1921,15 +1974,19 @@ function finalVerdict(results, roundsTotal){
   if(anyFail) return {t:"Chưa đạt", c:"var(--red)", bg:"var(--red-soft)", d:"Có vòng chưa đạt. Ôn các chủ đề được gợi ý rồi thử lại."};
   return {t:"Chưa hoàn tất", c:"var(--amber)", bg:"var(--amber-soft)", d:"Buổi phỏng vấn kết thúc trước khi đi hết các vòng."};
 }
-function vFinal(){ return `<div class="stack" style="--gap:20px">${sessionSummary(sessionFromIV())}<div class="row"><button class="btn primary" data-act="iv-new">Phỏng vấn lần mới</button><button class="btn" data-act="open-report" data-id="${IV.id}">Xem báo cáo chi tiết</button></div></div>`; }
-function sessionSummary(s){
+function vFinal(){ return `<div class="stack" style="--gap:20px">${sessionSummary(sessionFromIV(), false, `<button class="btn" data-act="open-report" data-id="${IV.id}">Xem tổng kết</button><button class="btn primary" data-act="iv-new">Phỏng vấn mới</button>`)}</div>`; }
+// report: trang báo cáo đầy đủ. Buổi một vòng thì kết quả vòng đã là tổng kết, không lặp lại khối điểm chung
+function sessionSummary(s, report, actions){
   const fv = finalVerdict(s.results, s.rounds.length), ov = overallOf(s.results);
   const weak = [...new Set(s.results.flatMap(x => x.eval.weakTopics))];
-  return `<h1>Tổng kết buổi phỏng vấn</h1>
-  <p class="muted">${s.jdName ? "JD " + esc(s.jdName) + ". " : ""}${esc(ROLES[s.role] ? ROLES[s.role].name : "")}, ${esc(LEVELS[s.level] || "")}, ${esc(COMPANY_SHORT[s.company] || "")}. ${fmtDate(s.createdAt)}</p>
-  <div class="verdict" style="--vbg:${fv.bg};--vc:${fv.c}"><span class="num">${ov}</span><span><span class="vt">${fv.t}</span><br><span class="small">${fv.d}</span></span></div>
-  <div class="panel">${s.rounds.map(rid => { const res = s.results.find(x => x.roundId === rid); return `<div class="crit"><span>${esc(ROUNDS[rid].name)}</span>${res ? bar(res.eval.overall) : `<span class="small muted">Chưa thi</span>`}<b>${res ? res.eval.overall : ""}</b></div>`; }).join("")}</div>
-  ${weak.length ? `<div class="stack" style="--gap:8px"><h3>Nên ôn tiếp</h3><div class="chips">${weak.map(t => `<button class="chip" data-act="open-topic" data-topic="${t}">${esc(TOPIC[t].name)}</button>`).join("")}</div></div>` : ""}`;
+  const single = s.rounds.length === 1;
+  const head = `<div class="page-head"><div class="stack" style="--gap:6px"><h1>${single && report ? "Kết quả vòng " + esc(ROUNDS[s.rounds[0]].name) : "Tổng kết buổi phỏng vấn"}</h1>
+  <p class="muted small">${s.jdName ? "JD " + esc(s.jdName) + ". " : ""}${esc(ROLES[s.role] ? ROLES[s.role].name : "")}, ${esc(LEVELS[s.level] || "")}, ${esc(COMPANY_SHORT[s.company] || "")}. ${fmtDate(s.createdAt)}</p></div>${actions ? `<div class="row page-actions">${actions}</div>` : ""}</div>`;
+  if(single && report) return head;
+  return `${head}
+  <div class="verdict" style="--vbg:${fv.bg};--vc:${fv.c}"><span class="num">${ov}<small>/100</small></span><span class="vbody"><span class="vt">${fv.t}</span><span class="vsum">${fv.d}</span></span></div>
+  ${single ? "" : `<section class="panel"><h3 style="margin-bottom:6px">Các vòng</h3>${s.rounds.map(rid => { const res = s.results.find(x => x.roundId === rid); return `<div class="crit"><span class="c-name">${esc(ROUNDS[rid].name)}</span>${res ? bar(res.eval.overall) : `<span class="small muted">Chưa thi</span>`}<b>${res ? res.eval.overall : ""}</b></div>`; }).join("")}</section>`}
+  ${weak.length ? `<section class="stack" style="--gap:10px"><h3>Nên ôn tiếp</h3><div class="chips">${weak.map(t => `<button class="chip" data-act="open-topic" data-topic="${t}">${esc(TOPIC[t].name)}</button>`).join("")}</div></section>` : ""}`;
 }
 
 /* ================= PROGRESS & REPORTS ================= */
@@ -1945,8 +2002,8 @@ function vReport(){
   if(!s) return `<button class="btn ghost back" data-go="interview">← Phỏng vấn thử</button><p>Không tìm thấy buổi phỏng vấn này.</p>`;
   return `<div class="stack" style="--gap:20px">
     <button class="btn ghost back" data-go="interview">← Phỏng vấn thử</button>
-    ${sessionSummary(s)}
-    ${s.results.map(res => { const r = ROUNDS[res.roundId]; return `<section class="stack" style="--gap:14px;padding-top:12px"><h2>${esc(r.name)}</h2>${renderEval(res.eval)}<details class="panel"><summary style="cursor:pointer">${res.quiz ? "Xem lại từng câu" : "Xem lại bản ghi"}</summary>${res.quiz ? `<div style="margin-top:12px">${quizReview(res.quiz)}</div>` : `<div class="chat" style="margin-top:12px">${chatHtml(res.transcript, r)}</div>`}</details></section>`; }).join("")}
+    ${sessionSummary(s, true)}
+    ${s.results.map(res => { const r = ROUNDS[res.roundId], single = s.rounds.length === 1; return `<section class="stack" style="--gap:14px${single ? "" : ";padding-top:16px;border-top:1px solid var(--line)"}">${single ? "" : `<h2>${esc(r.name)}</h2>`}${res.hints ? `<p class="small muted">Bạn đã xem gợi ý ${res.hints} lần trong vòng này.</p>` : ""}${renderEval(res.eval, {noTopics: !single})}<details class="panel"><summary style="cursor:pointer">${res.quiz ? "Xem lại từng câu" : "Xem lại bản ghi"}</summary>${res.quiz ? `<div style="margin-top:12px">${quizReview(res.quiz)}</div>` : `<div class="chat" style="margin-top:12px">${chatHtml(res.transcript, r)}</div>`}</details></section>`; }).join("")}
   </div>`;
 }
 
@@ -2033,7 +2090,7 @@ document.addEventListener("click", e => {
     case "iv-finish": IV.status = "finished"; render(); window.scrollTo(0,0); break;
     case "iv-new": IV = null; render(); break;
     case "iv-leave":
-      if(!arm(a, IV.results.length ? "Bấm lần nữa để rời phòng" : "Bấm lần nữa: buổi này sẽ không được lưu")) break;
+      if(!arm(a, IV.results.length ? "Bấm lần nữa: vòng này sẽ không được chấm" : "Bấm lần nữa: buổi này sẽ không được lưu")) break;
       stopMic(); if(IV.ctl) IV.ctl.abort(); IV = null; render();
       break;
     case "qz-pick": if(QZ && !QZ.submitted){ QZ.answers[QZ.idx] = +d.i; render(); } break;
@@ -2549,7 +2606,7 @@ const I18N_DICT = {
   "Đang suy nghĩ…":"Thinking…",
   // Practice
   "Câu trả lời của bạn":"Your answer", "Chấm điểm bằng AI":"Grade with AI", "Chấm lại":"Grade again", "Đang chấm…":"Grading…",
-  "Xem gợi ý ý chính":"Show key points", "Ẩn gợi ý":"Hide key points", "Câu trả lời tốt thường có":"A good answer usually covers",
+  "Xem gợi ý ý chính":"Show key points", "Ẩn gợi ý":"Hide hint", "Câu trả lời tốt thường có":"A good answer usually covers",
   "Trả lời như đang nói với người phỏng vấn. Nên có cấu trúc: làm rõ, phân tích, đề xuất, đo lường.":"Answer as if speaking to the interviewer. Use a structure: clarify, analyze, recommend, measure.",
   "Câu trả lời quá ngắn để chấm. Viết ít nhất vài câu.":"The answer is too short to grade. Write at least a few sentences.",
   "Không tìm thấy câu hỏi.":"Question not found.",
@@ -2598,11 +2655,11 @@ const I18N_DICT = {
   "Kỹ năng then chốt":"Key skills", "Nên ôn trước":"Study first", "Nên chuẩn bị kỹ":"Prepare well", "Câu hỏi dễ gặp, bấm để luyện trả lời":"Likely questions, click to practice",
   "Phân tích lại":"Analyze again",
   // Room
-  "Rời phòng":"Leave room", "Gửi câu trả lời":"Send answer", "Nên trả lời trong khoảng 2 đến 3 phút":"Aim to answer in about 2 to 3 minutes",
+  "Hủy":"Cancel", "Gửi câu trả lời":"Send answer", "Nên trả lời trong khoảng 2 đến 3 phút":"Aim to answer in about 2 to 3 minutes",
   "Trả lời hoặc hỏi lại để làm rõ. Ctrl + Enter để gửi.":"Answer, or ask a clarifying question. Ctrl + Enter to send.",
-  "Kết thúc vòng và chấm điểm":"End round and grade", "Dừng":"Stop", "Hỏi lại":"Ask again",
+  "Chấm điểm ngay":"Grade now", "Bỏ qua các câu hỏi vặn còn lại và chấm vòng này":"Skip the remaining follow-ups and grade this round", "Dừng":"Stop", "Hỏi lại":"Ask again",
   "Đã dừng. Bấm hỏi lại để tiếp tục.":"Stopped. Click Ask again to continue.",
-  "Bấm lần nữa để rời phòng":"Click again to leave", "Bấm lần nữa: buổi này sẽ không được lưu":"Click again: this session won't be saved",
+  "Bấm lần nữa: vòng này sẽ không được chấm":"Click again: this round won't be graded", "Bấm lần nữa: buổi này sẽ không được lưu":"Click again: this session won't be saved",
   "Cảm ơn bạn, vòng này mình dừng ở đây nhé.":"Thank you, let's stop this round here.",
   "Xem lại bản ghi":"View transcript", "Hoàn tất":"Finish", "Xem tổng kết":"View summary", "Kết thúc tại đây":"End here",
   "Trong quy trình thật, bạn sẽ dừng ở vòng này. Bạn có thể kết thúc hoặc vẫn luyện tiếp vòng sau.":"In a real process you'd stop at this round. You can end here or keep practicing the next round.",
@@ -2610,7 +2667,7 @@ const I18N_DICT = {
   "Nhận offer":"Offer", "Bạn qua tất cả các vòng. Xem lại phần cần cải thiện để vào buổi thật tự tin hơn.":"You passed every round. Review the improvement points to go into the real thing with more confidence.",
   "Có vòng chưa đạt. Ôn các chủ đề được gợi ý rồi thử lại.":"Some rounds weren't passed. Study the suggested topics and try again.",
   "Chưa hoàn tất":"Incomplete", "Buổi phỏng vấn kết thúc trước khi đi hết các vòng.":"The session ended before all rounds were completed.",
-  "Phỏng vấn lần mới":"New interview", "Xem báo cáo chi tiết":"View detailed report", "Chưa thi":"Not taken",
+  "Phỏng vấn lần mới":"New interview", "Xem báo cáo chi tiết":"View detailed report", "Chưa thi":"Not taken", "Các vòng":"Rounds", "Điểm theo tiêu chí":"Scores by criterion",
   "Hệ thống":"System",
   // Progress
   "Tiến độ":"Progress", "thẻ đã nhớ":"cards learned", "câu đã luyện trả lời":"questions practiced", "buổi phỏng vấn thử":"mock interviews",
@@ -2632,7 +2689,8 @@ const I18N_DICT = {
   "Chuyển sang tiếng Việt":"Chuyển sang tiếng Việt"
 };
 Object.assign(I18N_DICT, {
-  "Trả lời":"Answer", "Gợi ý":"Hint",
+  "Giải thích":"Explanation", "Xem tổng kết":"View summary", "Phỏng vấn mới":"New interview", "Nộp bài sớm":"Submit early",
+  "Trả lời":"Answer", "Dừng ghi âm":"Stop recording", "Trả lời bằng giọng nói":"Answer by voice", "Gợi ý":"Hint",
   "Gợi ý hướng trả lời":"How to approach this", "Đang nghĩ gợi ý…":"Thinking of a hint…",
   "Trình duyệt chưa cho phép dùng micro. Bấm biểu tượng ổ khóa cạnh thanh địa chỉ để cho phép, rồi thử lại.":"The browser hasn't allowed the microphone. Click the lock icon next to the address bar to allow it, then try again.",
   "Không ghi âm được. Hãy thử lại hoặc gõ câu trả lời.":"Couldn't record. Try again or type your answer.",

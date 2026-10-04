@@ -1,0 +1,93 @@
+<!doctype html><meta charset="utf-8">
+<style>html,body{margin:0;background:#13171C}body{display:flex;justify-content:center}iframe{border:0;display:block}</style>
+<body><iframe id="f" src="../index.html"></iframe>
+<script>
+// Harness chụp màn hình cho docs/SCREENS.md, dùng bởi tests/shoot_screens.py. URL: screens.html#<state>|<width>. Dữ liệu mẫu và trạng thái AI đều là giả lập.
+const [STATE, W] = decodeURIComponent(location.hash.slice(1)).split("|");
+const f = document.getElementById("f");
+f.style.width = W + "px"; f.style.height = (W < 600 ? 844 : 900) + "px";
+
+const SEED = `
+document.documentElement.dataset.theme = "dark";
+const now = Date.now(), H = 3600e3;
+cardIds("sense").slice(0,4).forEach((id,i) => S.cards[id] = {i:2+i, n:2, due: now + (i+1)*86400e3});
+cardIds("metrics").slice(0,3).forEach(id => S.cards[id] = {i:1, n:1, due: now - H});
+S.lessons[lessonsOf("sense")[0].id] = now - 20*H; S.lessons[lessonsOf("metrics")[0].id] = now - 30*H;
+S.practice = {[questionsOf("sense")[0].id]:{best:72, last: now - 5*H}, [questionsOf("metrics")[0].id]:{best:58, last: now - 9*H}};
+S.scores = [{t:"sense",s:72,d:now-5*H,src:"practice"},{t:"metrics",s:58,d:now-9*H,src:"practice"},{t:"ai",s:80,d:now-12*H,src:"quiz"},{t:"behavioral",s:45,d:now-30*H,src:"interview"},{t:"execution",s:66,d:now-40*H,src:"interview"}];
+S.jds = [{id:"jd1", name:"Senior PM - Ví điện tử", role:"pm", level:"senior", company:"product", text:"Chịu trách nhiệm sản phẩm thanh toán...".repeat(3), createdAt: now - 50*H, analysis:null}];
+window.EV = {overall:58, verdict:"borderline", summary:"Câu trả lời có cấu trúc khá rõ và chọn đúng nhóm người dùng, nhưng phần giải pháp còn chung chung và chưa có chỉ số đối trọng.",
+  scores:[{criterion:"Làm rõ mục tiêu và giả định",score:4,comment:"Hỏi rõ bệnh viện công hay tư và mục tiêu giảm thời gian chờ."},{criterion:"Hiểu người dùng và nỗi đau cụ thể",score:3,comment:"Chọn con cháu đặt hộ là hợp lý, nhưng nỗi đau mô tả còn chung."},{criterion:"Giải pháp đa dạng, sáng tạo",score:2,comment:"Chỉ đưa một giải pháp, chưa so sánh phương án."},{criterion:"Chỉ số đo thành công",score:3,comment:"Có chỉ số chính, thiếu chỉ số đối trọng."}],
+  strengths:["Làm rõ bối cảnh trước khi đi vào giải pháp.","Chọn nhóm người dùng có lý do rõ ràng."],
+  improvements:["Đưa ra 2 đến 3 giải pháp rồi so sánh đánh đổi.","Thêm chỉ số đối trọng để tránh tối ưu lệch."],
+  missing:["Kênh không cần smartphone cho người cao tuổi tự đặt (tổng đài, Zalo)."],
+  betterAnswer:"- Làm rõ: bệnh viện tư, mục tiêu giảm thời gian chờ tại quầy.\\n- Người dùng: con cháu đặt hộ, vì quen smartphone và thường lo việc này.\\n- Giải pháp: đặt hộ nhiều hồ sơ, nhắc lịch qua Zalo, tổng đài cho người tự đặt.\\n- Đo lường: thời gian chờ trung bình, tỷ lệ đặt online; đối trọng là tỷ lệ huỷ lịch.",
+  weakTopics:["sense","metrics"]};
+window.EV2 = Object.assign({}, EV, {overall:74, verdict:"pass", summary:"Kể chuyện theo STAR mạch lạc, có số liệu kết quả cụ thể.", weakTopics:["behavioral"]});
+window.SESS = {id:"r1", createdAt: now - 26*H, role:"pm", level:"mid", company:"product", mode:"single", lang:"vi", rounds:["sense"], results:[{roundId:"sense", transcript:[{role:"assistant",content:"Chào bạn, mình là Khoa. Hãy thiết kế một ứng dụng giúp người cao tuổi đặt lịch khám bệnh."},{role:"user",content:"Em xin làm rõ: bệnh viện công hay tư, và mục tiêu là giảm thời gian chờ hay tăng lượt đặt online?"}], eval:EV, hints:1}]};
+window.SESS2 = {id:"r2", createdAt: now - 3*H, jdId:"jd1", jdName:"Senior PM - Ví điện tử", role:"pm", level:"senior", company:"product", mode:"loop", lang:"vi", rounds:["hr","sense","behavioral"], results:[{roundId:"hr", transcript:[], eval:EV2},{roundId:"sense", transcript:[], eval:EV}]};
+Store.sessions = [SESS2, SESS];
+window.mkIV = (o) => Object.assign({id:"live", createdAt: now, mode:"loop", rounds:["hr","sense","metrics"], idx:1, profile: clone(effectiveProfile()), followups:2, lang:"vi", style:"neutral", results:[{roundId:"hr", transcript:[], eval:EV2}],
+  turns:[{role:"assistant",content:"Chào bạn, mình là Khoa, Head of Product. Giả sử bạn là PM của một app giao đồ ăn, bạn sẽ thiết kế tính năng giúp người dùng đặt lại món quen nhanh nhất như thế nào?"},{role:"user",content:"Em xin làm rõ: mục tiêu là tăng tần suất đặt hay giảm thời gian đặt? Em giả định là giảm thời gian đặt cho người đặt cơm trưa văn phòng."},{role:"assistant",content:"Đúng, mục tiêu là giảm thời gian đặt. Khi đưa mục món quen lên trang chủ, bạn chọn món hiển thị theo tiêu chí nào?"}],
+  answers:1, status:"answer", stream:"", err:"", ctl:null, draft:"", qStart: now - 47e3, hint:null, hintsRound:0}, o || {});
+window.fakeMic = (t) => { MIC = {target:t, rec:{stop(){}}}; };
+`;
+
+const STATES = {
+  // Kiến thức
+  "k01-learn": `go("learn")`,
+  "k02-topic-lessons": `go("topic",{topic:"sense",tab:"lessons"})`,
+  "k03-topic-cards": `go("topic",{topic:"sense",tab:"cards"})`,
+  "k04-topic-practice": `go("topic",{topic:"sense",tab:"practice"})`,
+  "k05-topic-quiz": `go("topic",{topic:"ai",tab:"quiz"})`,
+  "k06-lesson": `go("lesson",{id:lessonsOf("sense")[0].id})`,
+  "k07-lesson-ask-ai": `go("lesson",{id:lessonsOf("sense")[0].id}); LA = {id: lessonsOf("sense")[0].id, q:"Người phỏng vấn sẽ hỏi vặn phần này thế nào?", text:"Họ thường hỏi vặn ở bước chọn người dùng: vì sao chọn nhóm này mà không phải nhóm khác, quy mô nhóm đó lớn cỡ nào. Hãy chuẩn bị một lý do gắn với mục tiêu đã làm rõ, ví dụ nhóm con cháu đặt hộ chiếm phần lớn lượt đặt và dễ tiếp cận qua app.", status:"done", err:""}; render()`,
+  "k08-new-lesson": `go("newlesson")`,
+  "k09-new-lesson-loading": `GL.subject = "SQL cơ bản cho PM"; GL.status = "loading"; go("newlesson")`,
+  "k10-review-front": `startReview(cardIds("sense"), "topic", "sense")`,
+  "k11-review-back": `startReview(cardIds("sense"), "topic", "sense"); RV.flipped = true; render()`,
+  "k12-review-ai-explain": `startReview(cardIds("sense"), "topic", "sense"); RV.flipped = true; RV.ai = {status:"done", text:"Ví dụ với Grab: khi được hỏi cải thiện tính năng đặt xe, bước đầu là hỏi mục tiêu (tăng chuyến hay giảm huỷ chuyến) và phạm vi (xe máy hay ô tô). Câu hỏi phỏng vấn liên quan: Hãy cải thiện trải nghiệm đặt xe cho người lần đầu dùng app.", err:""}; render()`,
+  "k13-review-done": `startReview(cardIds("sense"), "topic", "sense"); RV.idx = RV.queue.length; RV.done = 7; render()`,
+  "k14-practice": `openPractice("sense", questionsOf("sense")[0].id); PR.answer = "Em sẽ bắt đầu bằng việc làm rõ mục tiêu: giảm thời gian chờ hay tăng lượt đặt online. Sau đó chọn nhóm con cháu đặt hộ vì..."; PR.start = Date.now() - 95e3; render()`,
+  "k15-practice-hint": `openPractice("sense", questionsOf("sense")[0].id); PR.showKeys = true; render()`,
+  "k16-practice-recording": `openPractice("sense", questionsOf("sense")[0].id); PR.answer = "Em nghĩ đầu tiên cần làm rõ bệnh viện công hay tư"; fakeMic("pr-answer"); render()`,
+  "k17-practice-grading": `openPractice("sense", questionsOf("sense")[0].id); PR.answer = "Em sẽ bắt đầu bằng việc làm rõ mục tiêu..."; PR.status = "loading"; render()`,
+  "k18-practice-result": `openPractice("sense", questionsOf("sense")[0].id); PR.answer = "Em sẽ bắt đầu bằng việc làm rõ mục tiêu..."; PR.result = EV; render()`,
+  "k19-quiz": `startLearnQuiz("ai", bankQuiz(), "bank"); QZ.answers = {0:0, 1:2}; QZ.idx = 2; QZ.start = Date.now() - 140e3; render()`,
+  "k20-quiz-result": `startLearnQuiz("ai", bankQuiz(), "bank"); QZ.questions.forEach((q,i) => QZ.answers[i] = i % 3 ? q.a : (q.a + 1) % 4); submitQuiz(); render()`,
+  // Phỏng vấn thử
+  "i01-setup": `go("interview")`,
+  "i02-setup-full-loop": `SU.mode = "loop"; SU.loop = null; go("interview")`,
+  "i03-jd-form": `editingTarget = "new"; go("interview")`,
+  "i04-jd-analysis": `S.profile.activeJd = "jd1"; S.jds[0].analysis = {summary:"Vị trí PM sản phẩm thanh toán, cần mạnh về metrics và làm việc với nhiều bên.", skills:["Phân tích funnel thanh toán","Ưu tiên roadmap","Làm việc với đối tác ngân hàng"], focusTopics:["metrics","execution"], gaps:["Kinh nghiệm với quy định thanh toán của NHNN"], questions:[{q:"Tỷ lệ thanh toán thành công giảm 5% tuần này, bạn điều tra thế nào?", topic:"metrics"},{q:"Bạn ưu tiên giữa tính năng mới và giảm lỗi thanh toán thế nào?", topic:"execution"}], rounds:["hr","metrics","execution","behavioral"]}; go("interview")`,
+  "i05-room-asking": `IV = mkIV({status:"asking", stream:"Đúng, mục tiêu là giảm thời gian đặt. Khi đưa mục món quen lên trang chủ, bạn"}); IV.turns.pop(); go("interview")`,
+  "i06-room-answer": `IV = mkIV(); go("interview")`,
+  "i07-room-hint": `IV = mkIV({hint:{turn:3, status:"done", text:"- Làm rõ: món quen là đặt bao nhiêu lần trong bao lâu\\n- Kết hợp tần suất, độ gần đây và khung giờ\\n- Loại món đã bị đánh giá thấp hoặc quán đã đóng cửa\\n- Đo bằng tỷ lệ đặt lại và thời gian đặt", err:""}, hintsRound:1}); go("interview")`,
+  "i08-room-recording": `IV = mkIV({draft:"Em sẽ dựa vào số lần đặt trong 30 ngày gần nhất"}); fakeMic("iv-answer"); go("interview")`,
+  "i09-room-grading": `IV = mkIV({status:"evaluating"}); IV.turns.push({role:"user",content:"Em sẽ dựa vào tần suất đặt, độ gần đây và khung giờ để chọn món."}); go("interview")`,
+  "i10-room-error": `IV = mkIV({status:"error", err:"Kết nối với AI bị gián đoạn. Bấm thử lại."}); go("interview")`,
+  "i11-room-ai-test": `IV = mkIV({rounds:["hr","aitest","sense"], idx:1, status:"quiz", turns:[]}); QZ = newQuiz(bankQuiz(), "interview", "ai", "bank"); QZ.answers = {0:1}; go("interview")`,
+  "i12-round-result": `IV = mkIV({status:"roundDone", results:[{roundId:"hr", transcript:[], eval:EV2},{roundId:"sense", transcript:mkIV().turns, eval:EV, hints:1}]}); go("interview")`,
+  "i13-final-summary": `IV = mkIV({idx:2, status:"finished", results:[{roundId:"hr", transcript:[], eval:EV2},{roundId:"sense", transcript:[], eval:EV},{roundId:"metrics", transcript:[], eval:Object.assign({}, EV, {overall:42, verdict:"fail"})}]}); go("interview")`,
+  "i14-report-single-round": `go("report",{id:"r1"})`,
+  "i15-report-multi-round": `go("report",{id:"r2"})`,
+  // Cài đặt
+  "s01-settings": `go("settings")`,
+  "s02-settings-key-saved": `S.settings.apiKey = "AIza-demo-key"; go("settings")`,
+  "s03-settings-edit-goal": `editingTarget = "general"; go("settings")`,
+  "s04-settings-drive-on": `localStorage.setItem(GD_CID_LS, "1234-abc.apps.googleusercontent.com"); localStorage.setItem(GD_ON_LS, "1"); GD.last = Date.now() - 600e3; S.settings.apiKey = "AIza-demo-key"; go("settings")`,
+};
+
+let done = false;
+f.onload = () => {
+  if(done) return; done = true;
+  const w = f.contentWindow;
+  try{ w.eval(SEED); w.eval(STATES[STATE]); }catch(e){ document.title = "ERR " + e.message; return; }
+  setTimeout(() => {
+    w.scrollTo(0, 0);
+    const h = Math.min(Math.max(w.document.documentElement.scrollHeight, W < 600 ? 844 : 900), 3200);
+    f.style.height = h + "px";
+    document.title = "H=" + h;
+  }, 400);
+};
+</script>
