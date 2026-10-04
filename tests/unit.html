@@ -154,6 +154,19 @@ test("mergeState: điểm mới sau lần xóa vẫn được gộp", () => {
   const b = st({_t:450, scores:[{t:"sense", s:60, d:300}, {t:"metrics", s:65, d:420}]});
   eq(W.mergeState(a, b).scores.map(x => x.d), [420, 550]);
 });
+test("mergeState: Gemini key lấy theo lần sửa key sau cùng, không theo _t", () => {
+  const a = st({_t:900, settings:{apiKey:"cu", model:"", keyMod:100}});
+  const b = st({_t:200, settings:{apiKey:"moi", model:"gemini-x", keyMod:150}});
+  eq(W.mergeState(a, b).settings, {apiKey:"moi", model:"gemini-x", keyMod:150}); eq(W.mergeState(b, a).settings.apiKey, "moi");
+});
+test("mergeState: xóa key ở máy khác cũng được đồng bộ", () => {
+  const a = st({_t:900, settings:{apiKey:"k", model:"", keyMod:100}}), b = st({_t:200, settings:{apiKey:"", model:"", keyMod:300}});
+  eq(W.mergeState(a, b).settings.apiKey, "");
+});
+test("mergeState: dữ liệu chưa có keyMod vẫn giữ key", () => {
+  const a = st({_t:900}), b = st({_t:200, settings:{apiKey:"k"}});
+  eq(W.mergeState(a, b).settings.apiKey, "k");
+});
 test("mergeState: không thay đổi dữ liệu đầu vào", () => {
   const a = st({_t:2, cards:{"sense-0":{i:1, n:1, due:1}}}), b = st({_t:1, cards:{"sense-1":{i:1, n:1, due:1}}});
   const before = JSON.stringify([a, b]); W.mergeState(a, b); eq(JSON.stringify([a, b]), before);

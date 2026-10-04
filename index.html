@@ -11,7 +11,7 @@
 :root{
   --board:#F2F5F4; --surface:#FFFFFF; --surface-2:#E9EEEC; --ink:#1C2433; --ink-2:#596375; --line:#D7DFDC;
   --blue:#2457C5; --blue-soft:#E3EBFB; --green:#17855A; --green-soft:#DDF2E8; --red:#C63A31; --red-soft:#F9E1DF;
-  --amber:#A86A12; --amber-soft:#FBEBCF; --postit:#FFE68C; --postit-ink:#3A3216; --on-blue:#FFFFFF;
+  --amber:#A86A12; --amber-soft:#FBEBCF; --postit:#DCE7FD; --postit-ink:#173A86; --on-blue:#FFFFFF;
   --shadow-paper:0 1px 0 rgba(28,36,51,.05), 0 14px 28px -16px rgba(28,36,51,.35);
   --display:"Bricolage Grotesque","Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
   --body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -24,7 +24,7 @@
   :root:not([data-theme="light"]){
     --board:#13171C; --surface:#1B2129; --surface-2:#232B35; --ink:#E7ECF2; --ink-2:#9AA6B6; --line:#2E3742;
     --blue:#7BA2FF; --blue-soft:#1F2C47; --green:#4CC490; --green-soft:#16302A; --red:#FF8279; --red-soft:#3A2023;
-    --amber:#F0B65A; --amber-soft:#3A2D16; --postit:#E9D06E; --postit-ink:#2B2510; --on-blue:#0F1520;
+    --amber:#F0B65A; --amber-soft:#3A2D16; --postit:#22345A; --postit-ink:#DCE6FF; --on-blue:#0F1520;
     --shadow-paper:0 1px 0 rgba(0,0,0,.3), 0 16px 30px -16px rgba(0,0,0,.7);
     color-scheme:dark;
   }
@@ -32,7 +32,7 @@
 :root[data-theme="dark"]{
   --board:#13171C; --surface:#1B2129; --surface-2:#232B35; --ink:#E7ECF2; --ink-2:#9AA6B6; --line:#2E3742;
   --blue:#7BA2FF; --blue-soft:#1F2C47; --green:#4CC490; --green-soft:#16302A; --red:#FF8279; --red-soft:#3A2023;
-  --amber:#F0B65A; --amber-soft:#3A2D16; --postit:#E9D06E; --postit-ink:#2B2510; --on-blue:#0F1520;
+  --amber:#F0B65A; --amber-soft:#3A2D16; --postit:#22345A; --postit-ink:#DCE6FF; --on-blue:#0F1520;
   --shadow-paper:0 1px 0 rgba(0,0,0,.3), 0 16px 30px -16px rgba(0,0,0,.7);
   color-scheme:dark;
 }
@@ -53,22 +53,23 @@ a{color:var(--blue)}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--board);border-bottom:1px solid var(--line)}
 .top-in{max-width:920px;margin:0 auto;display:flex;align-items:center;gap:20px;padding:12px 20px}
 .brand{font-family:var(--display);font-weight:700;font-size:1.12rem;display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;cursor:pointer}
-.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--postit);color:var(--postit-ink);display:grid;place-items:center;font-size:.95rem;transform:rotate(-4deg)}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--blue);color:var(--on-blue);display:grid;place-items:center;font-size:.95rem;transform:rotate(-4deg)}
 .nav{display:flex;gap:4px;margin-left:auto}
 .nav button{border:0;background:none;padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--ink-2);font-weight:500}
-.nav button[aria-current="page"]{background:var(--ink);color:var(--board)}
+.nav button[aria-current="page"]{background:var(--blue);color:var(--on-blue)}
 .nav .ico{display:none}
 main{max-width:920px;margin:0 auto;padding:28px 20px 64px}
 @media (max-width:719px){
   .nav{position:fixed;left:0;right:0;bottom:0;margin:0;justify-content:space-around;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:30}
   .nav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.74rem;padding:6px 10px;border-radius:12px;flex:1}
-  .nav .ico{display:block;font-size:1.15rem;line-height:1}
+  .nav .ico{display:block}
   .nav button[aria-current="page"]{background:var(--blue-soft);color:var(--blue)}
   main{padding:20px 16px calc(96px + env(safe-area-inset-bottom,0px))}
 }
 
 /* Generic */
 .stack>*+*{margin-top:var(--gap,16px)}
+.stack>label{display:block}
 .muted{color:var(--ink-2)}
 .small{font-size:.88rem}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -107,6 +108,11 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 .today-item .big{font-family:var(--display);font-size:1.5rem;font-weight:700;line-height:1}
 .today-item.yellow{background:var(--postit);color:var(--postit-ink);border-color:transparent;box-shadow:var(--shadow-paper);transform:rotate(-1deg)}
 .today-item.yellow:hover{transform:rotate(0)}
+.today.compact{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.today.compact .today-item{flex-direction:row;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;min-width:0}
+.today.compact .today-item .big{font-size:1.6rem}
+.today.compact .today-item .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.today.compact .today-item .one{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .profile-sum{display:flex;flex-wrap:wrap;gap:6px 18px}
 
 /* Marker bar */
@@ -123,8 +129,10 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 @media (max-width:520px){.trow{grid-template-columns:1fr}}
 
 /* Tabs */
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
-.tabs button{border:0;background:none;padding:10px 14px;cursor:pointer;color:var(--ink-2);font-weight:500;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+@media (max-width:520px){.tabs{gap:0}.tabs button{padding:10px 9px;font-size:.92rem}}
+.tabs button{flex:none;white-space:nowrap;border:0;background:none;padding:10px 14px;cursor:pointer;color:var(--ink-2);font-weight:500;border-bottom:3px solid transparent;margin-bottom:-1px}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--blue)}
 
 /* Post-it flashcard */
@@ -132,7 +140,7 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 .postit{width:min(100%,520px);min-height:260px;background:var(--postit);color:var(--postit-ink);border-radius:4px 4px 18px 4px;box-shadow:var(--shadow-paper);padding:28px 28px 22px;cursor:pointer;border:0;text-align:left;display:flex;flex-direction:column;gap:14px;transform:rotate(-.8deg);transition:transform .25s ease}
 .postit:hover{transform:rotate(0)}
 .postit .front{display:block;font-family:var(--display);font-size:1.4rem;font-weight:500;line-height:1.3}
-.postit .back{font-size:1.02rem;line-height:1.6;border-top:2px dashed rgba(58,50,22,.25);padding-top:14px}
+.postit .back{font-size:1.02rem;line-height:1.6;border-top:2px dashed color-mix(in srgb,var(--postit-ink) 25%,transparent);padding-top:14px}
 .postit .hint{margin-top:auto;font-size:.82rem;opacity:.7}
 .postit.flip{animation:flip .3s ease}
 @keyframes flip{0%{transform:rotate(-.8deg) rotateX(0)}50%{transform:rotate(-.8deg) rotateX(80deg)}100%{transform:rotate(-.8deg) rotateX(0)}}
@@ -167,7 +175,7 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 .room-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .steps{display:flex;gap:6px;flex-wrap:wrap}
 .step{font-size:.78rem;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
-.step.now{background:var(--ink);color:var(--board)}
+.step.now{background:var(--blue);color:var(--on-blue)}
 .step.pass{background:var(--green-soft);color:var(--green)}
 .step.fail{background:var(--red-soft);color:var(--red)}
 .chat{display:flex;flex-direction:column;gap:16px;padding:8px 0}
@@ -246,9 +254,9 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 <header class="top"><div class="top-in">
   <button class="brand" data-go="learn" aria-label="Về trang Kiến thức"><span class="brand-mark" aria-hidden="true">✎</span>Phòng phỏng vấn</button>
   <nav class="nav" aria-label="Điều hướng chính">
-    <button data-go="learn"><span class="ico" aria-hidden="true">❏</span>Kiến thức</button>
-    <button data-go="interview"><span class="ico" aria-hidden="true">◉</span>Phỏng vấn thử</button>
-    <button data-go="settings"><span class="ico" aria-hidden="true">⚙︎</span>Cài đặt</button>
+    <button data-go="learn"><svg class="ico" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>Kiến thức</button>
+    <button data-go="interview"><svg class="ico" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg>Phỏng vấn thử</button>
+    <button data-go="settings"><svg class="ico" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Cài đặt</button>
   </nav>
   <button id="lang-toggle" class="lang-toggle" data-act="toggle-lang" aria-label="Switch to English" title="Switch to English">EN</button>
 </div></header>
@@ -611,7 +619,7 @@ const LESSON_BY_ID = Object.fromEntries(Object.values(LESSONS).flat().map(l => [
 const LS_KEY = "pmprep:v1", LS_SESS = "pmprep:sessions:v1";
 const DAY = 86400000;
 function defaultState(){
-  return {v:1, profile:{role:"pm", level:"mid", company:"product", jd:"", lang:"vi", style:"neutral", followups:3, activeJd:"", uiLang:"vi"}, cards:{}, scores:[], custom:{}, practice:{}, lessons:{}, jds:[], customLessons:{}};
+  return {v:1, profile:{role:"pm", level:"mid", company:"product", jd:"", lang:"vi", style:"neutral", followups:3, activeJd:"", uiLang:"vi"}, cards:{}, scores:[], custom:{}, practice:{}, lessons:{}, jds:[], customLessons:{}, settings:{apiKey:"", model:"", keyMod:0}};
 }
 function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
@@ -621,6 +629,7 @@ function normalize(raw){
   if(!raw || typeof raw !== "object") return d;
   const s = Object.assign(d, clone(raw));
   s.profile = Object.assign(defaultState().profile, s.profile || {});
+  s.settings = Object.assign(defaultState().settings, s.settings || {});
   if(!ROLES[s.profile.role]) s.profile.role = "pm";
   s.cards = s.cards || {}; s.scores = Array.isArray(s.scores) ? s.scores : []; s.custom = s.custom || {}; s.practice = s.practice || {}; s.lessons = s.lessons || {}; s.customLessons = s.customLessons || {};
   s.jds = Array.isArray(s.jds) ? s.jds : [];
@@ -682,6 +691,10 @@ function mergeState(a, b){
   const out = clone(nw); out._resetAt = reset || undefined; if(!reset) delete out._resetAt;
   const byId = new Map(); for(const j of od.jds.concat(nw.jds)) if(j && j.id) byId.set(j.id, j);
   out.jds = [...byId.values()];
+  // Gemini key và model đi cùng nhau, lấy theo lần sửa key sau cùng (keyMod), không theo _t
+  const ks = (od.settings.keyMod || 0) > (nw.settings.keyMod || 0) ? od.settings : nw.settings;
+  out.settings = {apiKey: ks.apiKey, model: ks.model, keyMod: ks.keyMod || 0};
+  if(!out.settings.apiKey && !nw.settings.keyMod && !od.settings.keyMod && od.settings.apiKey) Object.assign(out.settings, {apiKey: od.settings.apiKey, model: od.settings.model});
   if((od._t || 0) < reset) return out;
   for(const [id, r] of Object.entries(od.cards)){ const c = out.cards[id]; if(!c || (r.n || 0) > (c.n || 0) || ((r.n || 0) === (c.n || 0) && (r.due || 0) > (c.due || 0))) out.cards[id] = r; }
   const sk = x => x.t + "|" + x.d + "|" + (x.src || ""), seen = new Set(out.scores.map(sk));
@@ -784,7 +797,7 @@ function gdPanel(){
   const cid = gdCid();
   return `<section class="panel stack" style="--gap:12px" id="gd-panel">
     <h2>Đồng bộ Google Drive</h2>
-    <p class="small muted">Lưu tiến độ học và lịch sử phỏng vấn vào Google Drive của bạn để dùng trên nhiều máy, nhiều trình duyệt. Dữ liệu nằm trong thư mục ẩn của app, không hiện trong Drive.</p>
+    <p class="small muted">Lưu tiến độ học, lịch sử phỏng vấn và Gemini API key vào Google Drive của bạn để dùng trên nhiều máy, nhiều trình duyệt. Dữ liệu nằm trong thư mục ẩn của app, không hiện trong Drive.</p>
     ${cid ? `<p class="small ${GD.err ? "note err" : ""}" role="status">${esc(gdStatus())}</p>
       <div class="row"><button class="btn primary" data-act="gd-sync" ${GD.busy ? "disabled" : ""}>Đồng bộ ngay</button><button class="btn ghost danger" data-act="gd-off">Tắt đồng bộ</button></div>`
     : `<label><span class="label">Google OAuth Client ID</span><input type="text" id="gd-cid" autocomplete="off" placeholder="1234-abc.apps.googleusercontent.com"></label>
@@ -840,8 +853,15 @@ const IN_CLAUDE = !!(window.claude && typeof window.claude.use === "function");
 const KEY_LS = "pmprep:geminikey", MODEL_LS = "pmprep:geminimodel";
 const DEFAULT_MODEL = "gemini-flash-latest", QUICK_MODEL = "gemini-flash-lite-latest";
 function lsStr(k){ try{ return localStorage.getItem(k) || ""; }catch(e){ return ""; } }
-function getKey(){ return lsStr(KEY_LS); }
-function getModel(){ return lsStr(MODEL_LS).trim(); }
+function getKey(){ return (S.settings.apiKey || "").trim(); }
+function getModel(){ return (S.settings.model || "").trim(); }
+function setApiKey(key, model){
+  if(S.settings.apiKey === key && S.settings.model === model) return;
+  Object.assign(S.settings, {apiKey: key, model, keyMod: Date.now()}); save();
+}
+// Key cũ lưu riêng trong localStorage: chuyển vào S.settings một lần để được đồng bộ cùng tiến độ
+if(lsStr(KEY_LS) && !S.settings.apiKey){ setApiKey(lsStr(KEY_LS).trim(), lsStr(MODEL_LS).trim()); }
+try{ localStorage.removeItem(KEY_LS); localStorage.removeItem(MODEL_LS); }catch(e){}
 function localSampler(key){
   const call = async (input, opts, asJson) => {
     opts = opts || {};
@@ -930,18 +950,83 @@ let view = {name:"learn"};
 const app = document.getElementById("app");
 function go(name, params){
   view = Object.assign({name}, params || {});
+  syncUrl(false);
   render();
   window.scrollTo(0, 0);
 }
-function navKey(){ return {learn:"learn", topic:"learn", practice:"learn", quiz:"learn", lesson:"learn", review:"learn", interview:"interview", report:"interview", settings:"settings"}[view.name] || "learn"; }
+// Trang hiện tại nằm trên URL (#/...) để tải lại trang và nút Back của trình duyệt giữ đúng chỗ
+function routeOf(v){
+  const e = encodeURIComponent;
+  switch(v.name){
+    case "topic": return "#/topic/" + e(v.topic) + "/" + e(v.tab || "lessons");
+    case "lesson": return "#/lesson/" + e(v.id);
+    case "newlesson": return "#/new-lesson" + (v.topic ? "/" + e(v.topic) : "");
+    case "practice": return "#/practice/" + e(v.topic) + "/" + e(v.qid);
+    case "quiz": return "#/quiz/" + e(v.topic);
+    case "report": return "#/report/" + e(v.id);
+    case "review": case "interview": case "settings": return "#/" + v.name;
+    default: return "#/";
+  }
+}
+function parseRoute(h){
+  let parts = []; try{ parts = (h || "").replace(/^#\/?/, "").split("/").map(decodeURIComponent); }catch(e){}
+  const [name, a, b] = parts;
+  if(name === "topic" && TOPIC[a]) return {name, topic: a, tab: ["lessons","cards","practice","quiz"].includes(b) ? b : "lessons"};
+  if(name === "lesson" && a) return {name, id: a};
+  if(name === "new-lesson") return {name: "newlesson", topic: TOPIC[a] ? a : ""};
+  if(name === "practice" && TOPIC[a] && b) return {name, topic: a, qid: b};
+  if(name === "quiz" && TOPIC[a]) return {name, topic: a};
+  if(name === "report" && a) return {name, id: a};
+  if(["review","interview","settings"].includes(name)) return {name};
+  return {name: "learn"};
+}
+// Trang cần dữ liệu tạm (thẻ đang ôn, bài test, câu đang luyện) mà không còn thì về trang cha gần nhất
+function resolveView(v){
+  if(v.name === "practice" && (!PR || PR.qid !== v.qid)){
+    if(!findQuestion(v.topic, v.qid)) return {name: "topic", topic: v.topic, tab: "practice"};
+    PR = {topic: v.topic, qid: v.qid, answer:"", status:"idle", result:null, err:"", showKeys:false, start:Date.now()};
+  }
+  if(v.name === "quiz" && (!QZ || QZ.ctx !== "learn" || QZ.topic !== v.topic)) return {name: "topic", topic: v.topic, tab: "quiz"};
+  if(v.name === "review" && !RV) return {name: "learn"};
+  return v;
+}
+function syncUrl(replace){
+  const h = routeOf(view);
+  if(location.hash === h) return;
+  try{ history[replace ? "replaceState" : "pushState"](null, "", h); }catch(e){}
+}
+window.addEventListener("popstate", () => {
+  editingTarget = null;
+  view = resolveView(parseRoute(location.hash)); syncUrl(true);
+  render();
+});
+
+/* Phiên đang làm dở (phỏng vấn, bài test, câu đang luyện, thẻ đang ôn) được giữ lại khi tải lại trang */
+const LIVE_LS = "pmprep:live";
+function persistLive(){
+  lsSet(LIVE_LS, {IV: IV ? Object.assign({}, IV, {ctl: null, stream: ""}) : null, QZ, PR, RV: RV ? Object.assign({}, RV, {ai: null}) : null});
+}
+function restoreLive(){
+  const l = lsGet(LIVE_LS) || {};
+  IV = l.IV || null; QZ = l.QZ || null; PR = l.PR || null; RV = l.RV || null;
+  if(IV && IV.status === "asking"){ IV.status = "error"; IV.err = "Trang đã tải lại khi người phỏng vấn đang hỏi. Bấm Hỏi lại để tiếp tục."; }
+  if(IV && IV.status === "evaluating"){ IV.status = "evalError"; IV.err = "Trang đã tải lại khi đang chấm điểm. Bấm Chấm lại để tiếp tục."; }
+  if(PR && PR.status === "loading") PR.status = "idle";
+}
+function busyWithAI(){
+  return !!(IV && (IV.status === "asking" || IV.status === "evaluating")) || !!(PR && PR.status === "loading") || GL.status === "loading" || qgenState.status === "loading" || genState.status === "loading" || jdAn.status === "loading";
+}
+window.addEventListener("beforeunload", e => { if(busyWithAI()){ e.preventDefault(); e.returnValue = ""; } });
+function navKey(){ return {learn:"learn", topic:"learn", practice:"learn", quiz:"learn", lesson:"learn", newlesson:"learn", review:"learn", interview:"interview", report:"interview", settings:"settings"}[view.name] || "learn"; }
 function render(){
   ensureLang();
   document.querySelectorAll(".nav button").forEach(b => b.toggleAttribute("aria-current", false));
   const cur = document.querySelector(`.nav button[data-go="${navKey()}"]`); if(cur) cur.setAttribute("aria-current","page");
-  const fn = {learn:vLearn, topic:vTopic, review:vReview, practice:vPractice, quiz:vQuiz, lesson:vLesson, interview:vInterview, report:vReport, settings:vSettings}[view.name] || vLearn;
+  const fn = {learn:vLearn, topic:vTopic, review:vReview, practice:vPractice, quiz:vQuiz, lesson:vLesson, newlesson:vNewLesson, interview:vInterview, report:vReport, settings:vSettings}[view.name] || vLearn;
   app.innerHTML = fn();
   translateDom(app);
   afterRender();
+  persistLive();
 }
 let afterHooks = [];
 function afterRender(){ const h = afterHooks; afterHooks = []; h.forEach(f => f()); }
@@ -954,7 +1039,7 @@ function vSettings(){
   ${homeTargetHtml()}
   ${IN_CLAUDE ? "" : `<section class="panel stack" style="--gap:12px">
     <h2>Cài đặt AI</h2>
-    ${getKey() ? `<p class="small">Đã lưu Gemini API key trên trình duyệt này. Model đang dùng: <b>${esc(getModel() || DEFAULT_MODEL)}</b>.</p>
+    ${getKey() ? `<p class="small">Đã lưu Gemini API key. Model đang dùng: <b>${esc(getModel() || DEFAULT_MODEL)}</b>.</p>
       <div class="row"><button class="btn ghost danger" data-act="key-remove">Xóa API key</button></div>`
     : `<p class="small muted">Chấm điểm, phỏng vấn thử, tạo đề và hỏi thêm cần Gemini API key, lấy miễn phí tại aistudio.google.com.</p>
       <div class="ai-form">
@@ -962,7 +1047,7 @@ function vSettings(){
         <input type="text" id="api-model" autocomplete="off" placeholder="${DEFAULT_MODEL}" value="${esc(getModel())}" aria-label="Model (không bắt buộc)" title="Model (không bắt buộc)">
         <button class="btn primary" data-act="key-save">Lưu</button>
       </div>
-      <p class="small muted">Key chỉ lưu trên trình duyệt này. Với gói miễn phí, Google có thể dùng nội dung gửi lên để cải thiện sản phẩm.</p>`}
+      <p class="small muted">Key được lưu cùng tiến độ trên trình duyệt này và đồng bộ sang máy khác nếu bật Google Drive. Với gói miễn phí, Google có thể dùng nội dung gửi lên để cải thiện sản phẩm.</p>`}
   </section>`}
   ${gdPanel()}
   ${Store.note === "local" && Store.ready ? `<p class="small muted">${gdOn() ? "Tiến độ được lưu trên trình duyệt này và đồng bộ với Google Drive." : "Tiến độ đang được lưu trên trình duyệt này."}</p>` : ""}
@@ -1090,22 +1175,19 @@ function jdStatsHtml(){
 
 /* ================= LEARN ================= */
 function vLearn(){
-  const p = S.profile, due = dueIds().length, weak = weakestTopic(), nl = nextLesson();
+  const p = S.profile, due = dueIds().length, nl = nextLesson();
   return `<div class="stack" style="--gap:28px">
   <section class="hero">
     <h1>Hôm nay ôn gì?</h1>
     <p class="muted">Đang ôn cho vị trí ${esc(ROLES[p.role].name)} ${esc(LEVELS[p.level])}, ${esc(COMPANY_SHORT[p.company].toLowerCase())}.</p>
   </section>
-  <div class="today">
-    <button class="today-item yellow" data-act="review-due"><span class="big" style="font-size:2.2rem">${due}</span><span>${due ? "thẻ cần ôn hôm nay" : "thẻ đến hạn. Ôn lại toàn bộ cho chắc?"}</span></button>
-    ${nl ? `<button class="today-item" data-act="open-lesson" data-id="${nl.id}"><span class="big">Bài học tiếp theo</span><span class="muted">${esc(nl.t)}, ${nl.m} phút đọc</span></button>` : ""}
-    <button class="today-item" data-act="quick-practice" data-topic="${weak}"><span class="big">${esc(TOPIC[weak].name)}</span><span class="muted">Luyện một câu trả lời ở chủ đề ${mastery(weak) === null ? "bạn chưa luyện" : "đang yếu nhất"}</span></button>
+  <div class="today compact">
+    <button class="today-item yellow" data-act="review-due"><span class="big">${due}</span><span>${due ? "thẻ cần ôn hôm nay" : "thẻ đến hạn. Ôn lại toàn bộ cho chắc?"}</span></button>
+    ${nl ? `<button class="today-item" data-act="open-lesson" data-id="${nl.id}"><span class="txt"><span class="small muted">Bài học tiếp theo, ${nl.m} phút đọc</span><b class="one">${esc(nl.t)}</b></span></button>` : ""}
   </div>
   ${gdOn() && !GD.last ? `<div class="panel row"><span class="small">Google Drive đang bật nhưng chưa đồng bộ trong phiên này.</span><span class="spacer"></span><button class="btn" data-act="gd-sync" ${GD.busy ? "disabled" : ""}>Đồng bộ ngay</button></div>` : ""}
   <section class="stack" style="--gap:20px">
-  <h2>Học theo chủ đề</h2>
-  <p class="muted">Mỗi chủ đề đi theo bốn bước: đọc bài học, ôn thẻ ghi nhớ, luyện trả lời có AI chấm, và làm trắc nghiệm.</p>
-  ${genLessonPanel("")}
+  <div class="row"><h2>Học theo chủ đề</h2><span class="spacer"></span><button class="btn" data-act="open-gen">Thêm bài học bằng AI</button></div>
   <div class="tlist">${TOPICS.map(t => {
     const m = mastery(t.id), d = dueIds(t.id).length, done = Object.keys(S.practice).filter(k => questionsOf(t.id).some(q => q.id === k)).length;
     return `<button class="trow" data-act="open-topic" data-topic="${t.id}">
@@ -1315,6 +1397,13 @@ function genLessonPanel(fixedTopic){
     ${GL.err ? `<p class="note err">${esc(GL.err)}</p>` : ""}
   </section>`;
 }
+function vNewLesson(){
+  const t = TOPIC[view.topic];
+  return `<div class="stack" style="--gap:20px">
+    ${t ? `<button class="btn ghost back" data-act="open-topic" data-topic="${t.id}" data-tab="lessons">← ${esc(t.name)}</button>` : `<button class="btn ghost back" data-go="learn">← Kiến thức</button>`}
+    ${genLessonPanel(t ? t.id : "")}
+  </div>`;
+}
 async function genLesson(){
   const subject = ((document.getElementById("gl-subject") || {}).value || GL.subject).trim();
   const fixed = ((document.getElementById("gl-topic") || {}).value || "").trim();
@@ -1353,7 +1442,7 @@ Viết bằng tiếng Việt. Chỉ trả về JSON: {"topic":"mã chủ đề",
     go("lesson", {id: lesson.id});
     return;
   }catch(e){ GL.status = "idle"; GL.err = aiErrText(e); }
-  if(view.name === "learn" || view.name === "topic") render();
+  if(view.name === "newlesson") render();
 }
 
 /* ================= LESSONS VIEW ================= */
@@ -1390,7 +1479,7 @@ const ASK_CHIPS = ["Cho mình thêm một ví dụ với sản phẩm quen thu�
 function lessonsTab(t){
   return `<p class="muted">Đọc bài trước, rồi ôn thẻ, luyện trả lời và làm trắc nghiệm để chắc kiến thức.</p>
   <ol class="llist">${lessonsOf(t.id).map((l, i) => `<li><button class="lrow" data-act="open-lesson" data-id="${l.id}"><span class="lnum${lessonDone(l.id) ? " done" : ""}" aria-hidden="true">${lessonDone(l.id) ? "✓" : i + 1}</span><span><span class="ltitle">${esc(l.t)}</span>${l.ai ? ` <span class="tag ai">AI tạo</span>` : ""}<br><span class="small muted">${l.m} phút đọc${lessonDone(l.id) ? ", đã học" : ""}</span></span></button></li>`).join("")}</ol>
-  ${genLessonPanel(t.id)}`;
+  <div><button class="btn" data-act="open-gen" data-topic="${t.id}">Thêm bài học bằng AI</button></div>`;
 }
 function vLesson(){
   const l = getLesson(view.id);
@@ -1589,9 +1678,9 @@ function vSetup(){
       <div><span class="label">Ngôn ngữ phỏng vấn</span><div class="chips">${chip("su-lang","vi",p.lang === "vi","Tiếng Việt")}${chip("su-lang","en",p.lang === "en","English")}</div></div>
     </div>
     <div><button class="btn primary" data-act="iv-start" ${SU.mode === "loop" && !SU.loop.length ? "disabled" : ""}>Vào phòng phỏng vấn</button></div>
+    <div class="stack" style="--gap:6px"><p class="small muted">Vòng "Bài test AI" là 10 câu trắc nghiệm có giờ, giống bài test online để xem bạn hiểu và dùng AI thế nào.</p>
+    <p class="small muted">Mẹo: trả lời thành tiếng trước khi gõ, hoặc dùng tính năng đọc chính tả của bàn phím điện thoại để luyện nói tự nhiên hơn.</p></div>
   </div>
-  <p class="small muted">Vòng "Bài test AI" là 10 câu trắc nghiệm có giờ, giống bài test online để xem bạn hiểu và dùng AI thế nào.</p>
-  <p class="small muted">Mẹo: trả lời thành tiếng trước khi gõ, hoặc dùng tính năng đọc chính tả của bàn phím điện thoại để luyện nói tự nhiên hơn.</p>
   ${historyHtml()}
   </div>`;
 }
@@ -1792,7 +1881,7 @@ document.addEventListener("click", e => {
     case "explain": explainCard(); break;
     case "quick-practice": { const qs = questionsOf(d.topic); const fresh = qs.filter(q => !S.practice[q.id]); const pick = (fresh.length ? fresh : qs)[Math.floor(Math.random() * (fresh.length ? fresh : qs).length)]; PR = null; openPractice(d.topic, pick.id); break; }
     case "open-topic": go("topic", {topic: d.topic, tab: d.tab || "lessons"}); break;
-    case "tab": view.tab = d.tab; render(); break;
+    case "tab": view.tab = d.tab; syncUrl(true); render(); break;
     case "open-q": openPractice(d.topic, d.q); break;
     case "gen-q": genQuestion(d.topic); break;
     case "grade": grade(); break;
@@ -1867,10 +1956,11 @@ document.addEventListener("click", e => {
     case "lesson-done": S.lessons[d.id] = Date.now(); save(); render(); break;
     case "ask-chip": askLesson(ASK_CHIPS[+d.k]); break;
     case "ask-lesson": askLesson((document.getElementById("la-q") || {}).value || LA.q); break;
-    case "key-save": { const v = (document.getElementById("api-key") || {}).value || ""; const mdl = ((document.getElementById("api-model") || {}).value || "").trim(); try{ if(v.trim()) localStorage.setItem(KEY_LS, v.trim()); if(mdl) localStorage.setItem(MODEL_LS, mdl); else localStorage.removeItem(MODEL_LS); }catch(e){} render(); break; }
-    case "key-remove": if(!arm(a, "Bấm lần nữa để xóa key")) break; try{ localStorage.removeItem(KEY_LS); localStorage.removeItem(MODEL_LS); }catch(e){} render(); break;
+    case "key-save": { const v = ((document.getElementById("api-key") || {}).value || "").trim(); const mdl = ((document.getElementById("api-model") || {}).value || "").trim(); if(v) setApiKey(v, mdl); render(); break; }
+    case "key-remove": if(!arm(a, "Bấm lần nữa để xóa key")) break; setApiKey("", ""); render(); break;
     case "toggle-lang": S.profile.uiLang = isEn() ? "vi" : "en"; S.profile.lang = S.profile.uiLang; save(); render(); break;
     case "gen-lesson": genLesson(); break;
+    case "open-gen": GL.err = ""; go("newlesson", {topic: d.topic || ""}); setTimeout(() => { const el = document.getElementById("gl-subject"); if(el) el.focus(); }, 0); break;
     case "gl-sugg": { GL.subject = GL_SUGGEST[isEn() ? "en" : "vi"][+d.i]; const el = document.getElementById("gl-subject"); if(el){ el.value = GL.subject; el.focus(); } break; }
     case "del-lesson": {
       if(!arm(a, "Bấm lần nữa để xóa bài")) break;
@@ -1884,15 +1974,15 @@ document.addEventListener("click", e => {
     case "gd-off": if(!arm(a, "Bấm lần nữa để tắt đồng bộ")) break; try{ if(GD.token && window.google && google.accounts) google.accounts.oauth2.revoke(GD.token, () => {}); localStorage.removeItem(GD_CID_LS); localStorage.removeItem(GD_ON_LS); }catch(e){} Object.assign(GD, {token:null, exp:0, fileId:null, err:"", last:0}); render(); break;
     case "reset":
       if(!arm(a, "Bấm lần nữa để xóa vĩnh viễn")) break;
-      { const prof = S.profile, jds = S.jds; S = defaultState(); S.profile = prof; S.jds = jds; S._resetAt = Date.now(); save();
+      { const prof = S.profile, jds = S.jds; const settings = S.settings; S = defaultState(); S.profile = prof; S.jds = jds; S.settings = settings; S._resetAt = Date.now(); save();
         if(Store.db) Store.sessions.forEach(s => sessCol().doc(s.id).delete().catch(()=>{}));
         Store.sessions = []; lsSet(LS_SESS, []); render(); }
       break;
   }
 });
 document.addEventListener("input", e => {
-  if(e.target.id === "pr-answer" && PR) PR.answer = e.target.value;
-  if(e.target.id === "iv-answer" && IV) IV.draft = e.target.value;
+  if(e.target.id === "pr-answer" && PR){ PR.answer = e.target.value; persistLive(); }
+  if(e.target.id === "iv-answer" && IV){ IV.draft = e.target.value; persistLive(); }
   if(e.target.id === "la-q") LA.q = e.target.value;
   if(e.target.id === "gl-subject") GL.subject = e.target.value;
   if(e.target.id === "gl-topic") GL.topic = e.target.value;
@@ -2328,11 +2418,11 @@ const I18N_DICT = {
   "Vị trí":"Role", "Cấp độ":"Level", "Loại công ty":"Company type", "Lưu":"Save", "Hủy":"Cancel",
   // Local AI settings
   "Cài đặt AI":"AI settings",
-  "Đã lưu Gemini API key trên trình duyệt này. Model đang dùng:":"Gemini API key saved in this browser. Model in use:",
+  "Đã lưu Gemini API key. Model đang dùng:":"Gemini API key saved. Model in use:",
   "Xóa API key":"Remove API key",
   "Chấm điểm, phỏng vấn thử, tạo đề và hỏi thêm cần Gemini API key, lấy miễn phí tại aistudio.google.com.":"Grading, mock interviews, question generation and follow-ups need a Gemini API key, free at aistudio.google.com.",
   "Model (không bắt buộc)":"Model (optional)",
-  "Key chỉ lưu trên trình duyệt này. Với gói miễn phí, Google có thể dùng nội dung gửi lên để cải thiện sản phẩm.":"The key is stored only in this browser. On the free tier, Google may use what you send to improve its products.",
+  "Key được lưu cùng tiến độ trên trình duyệt này và đồng bộ sang máy khác nếu bật Google Drive. Với gói miễn phí, Google có thể dùng nội dung gửi lên để cải thiện sản phẩm.":"The key is saved with your progress in this browser and synced to other devices if Google Drive is on. On the free tier, Google may use what you send to improve its products.",
   "Bấm lần nữa để xóa key":"Click again to remove the key",
   // Learn
   "Học theo chủ đề":"Learn by topic",
@@ -2438,7 +2528,7 @@ const I18N_DICT = {
   "Không tìm thấy buổi phỏng vấn này.":"Interview not found.",
   "Đồng bộ Google Drive":"Google Drive sync", "Đồng bộ ngay":"Sync now", "Tắt đồng bộ":"Turn off sync", "Kết nối Google Drive":"Connect Google Drive",
   "Bấm lần nữa để tắt đồng bộ":"Click again to turn off sync", "Đang đồng bộ…":"Syncing…", "Chưa bật.":"Not enabled.",
-  "Lưu tiến độ học và lịch sử phỏng vấn vào Google Drive của bạn để dùng trên nhiều máy, nhiều trình duyệt. Dữ liệu nằm trong thư mục ẩn của app, không hiện trong Drive.":"Save your study progress and interview history to your Google Drive to use it across devices and browsers. The data lives in the app's hidden folder and doesn't show in Drive.",
+  "Lưu tiến độ học, lịch sử phỏng vấn và Gemini API key vào Google Drive của bạn để dùng trên nhiều máy, nhiều trình duyệt. Dữ liệu nằm trong thư mục ẩn của app, không hiện trong Drive.":"Save your study progress, interview history and Gemini API key to your Google Drive to use it across devices and browsers. The data lives in the app's hidden folder and doesn't show in Drive.",
   "Tạo OAuth Client ID loại Web application trong Google Cloud Console, bật Google Drive API và thêm địa chỉ đang mở app vào Authorized JavaScript origins. Không dùng được khi mở trực tiếp file:// — hãy mở qua http://localhost hoặc một trang web.":"Create a Web application OAuth Client ID in Google Cloud Console, enable the Google Drive API and add the address you open the app from to Authorized JavaScript origins. It doesn't work when opening file:// directly — open it via http://localhost or a website.",
   "Bấm Đồng bộ ngay để đăng nhập Google và tải tiến độ mới nhất.":"Click Sync now to sign in to Google and load your latest progress.",
   "Google Drive đang bật nhưng chưa đồng bộ trong phiên này.":"Google Drive is on but hasn't synced this session.",
@@ -2448,11 +2538,16 @@ const I18N_DICT = {
   "Không tải được Google Identity Services":"Couldn't load Google Identity Services",
   "Chuyển sang tiếng Việt":"Chuyển sang tiếng Việt"
 };
+Object.assign(I18N_DICT, {
+  "Trang đã tải lại khi người phỏng vấn đang hỏi. Bấm Hỏi lại để tiếp tục.":"The page reloaded while the interviewer was asking. Click Ask again to continue.",
+  "Trang đã tải lại khi đang chấm điểm. Bấm Chấm lại để tiếp tục.":"The page reloaded during grading. Click Grade again to continue."
+});
 const I18N_PATTERNS = [
   [/^Bài (\d+)\/(\d+), (\d+) phút đọc$/, (m, a, b, c) => `Lesson ${a}/${b}, ${c} min read`],
   [/^Đang ôn cho vị trí (.+)\.$/, (m, a) => `Preparing for ${a}.`],
   [/^(.+), (\d+) phút đọc, đã học$/, (m, a, n) => `${a}, ${n} min read, done`],
   [/^(\d+) phút đọc, đã học$/, (m, n) => `${n} min read, done`],
+  [/^Bài học tiếp theo, (\d+) phút đọc$/, (m, n) => `Next lesson, ${n} min read`],
   [/^(.+), (\d+) phút đọc$/, (m, a, n) => `${a}, ${n} min read`],
   [/^(\d+) phút đọc$/, (m, n) => `${n} min read`],
   [/^(\d+)\/(\d+) bài đã học$/, (m, a, b) => `${a}/${b} lessons done`],
@@ -2507,6 +2602,8 @@ const I18N_PATTERNS = [
   [/^Google Drive lỗi (\d+)$/, (m, a) => `Google Drive error ${a}`]
 ];
 
+restoreLive();
+view = resolveView(parseRoute(location.hash)); syncUrl(true);
 render();
 initStore();
 getSample();
