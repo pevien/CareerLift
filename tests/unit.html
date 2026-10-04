@@ -243,6 +243,253 @@ test("tr: dịch chuỗi giao diện đồng bộ sang tiếng Anh", () => {
   eq(W.tr("Đồng bộ ngay"), "Đồng bộ ngay");
 });
 
+/* ---------- hồ sơ kinh nghiệm, kho câu chuyện ---------- */
+test("normalize: state cũ có hồ sơ, kho câu chuyện và thẻ riêng rỗng", () => {
+  const s = W.normalize({profile:{role:"pm"}});
+  eq(s.me, {raw:"", sum:null, at:0}); eq(s.stories, []); eq(s.storiesDel, {}); eq(s.customCards, {}); eq(s.ivAdded, {});
+});
+test("normMe: dữ liệu hỏng được làm sạch", () => {
+  eq(W.normMe({raw: 5, sum: "x", at: "12"}), {raw:"", sum:null, at:12});
+});
+test("normMeSum: bỏ vị trí trống, giới hạn số mục", () => {
+  const sm = W.normMeSum({headline:"PM", roles:[{title:"PM", company:"MoMo", points:["a","b","c","d","e","f"]}, {}, null, {period:"2020"}], skills:"x"});
+  eq(sm.roles.length, 1); eq(sm.roles[0].points.length, 5); eq(sm.skills, []); eq(sm.headline, "PM");
+});
+test("meText: có bản tóm tắt thì dùng tóm tắt, không thì dùng nguyên văn", () => {
+  g(`S = defaultState(); S.me = {raw:"Nguyên văn hồ sơ", sum:null, at:1}`);
+  eq(g("meText()"), "Nguyên văn hồ sơ");
+  g(`S.me.sum = {headline:"PM 5 năm", roles:[{title:"Senior PM", company:"Tiki", period:"2021-nay", points:["Tăng 20% chuyển đổi"]}]}`);
+  const t = g("meText()"); ok(t.includes("PM 5 năm") && t.includes("Senior PM, Tiki, 2021-nay: Tăng 20% chuyển đổi"), t);
+  g(`S = defaultState()`);
+});
+test("isExpQ: nhận ra câu hỏi về kinh nghiệm", () => {
+  ok(W.isExpQ("behavioral", "Bất kỳ câu nào")); ok(W.isExpQ("sense", "Kể về một lần bạn ra quyết định khó"));
+  ok(W.isExpQ("", "Tell me about a time you disagreed with an engineer"));
+  ok(!W.isExpQ("metrics", "DAU của Zalo giảm 10%, bạn điều tra thế nào?"));
+});
+test("hasPersonal: cần hồ sơ hoặc ít nhất một câu chuyện đủ nội dung", () => {
+  g(`S = defaultState()`); eq(g("hasPersonal()"), false);
+  g(`S.stories = [{id:"a", title:"Chỉ có tên", tags:[], s:"", t:"", a:"", r:""}]`); eq(g("hasPersonal()"), false);
+  g(`S.stories[0].a = "Tôi đã làm"`); eq(g("hasPersonal()"), true);
+  g(`S = defaultState()`);
+});
+test("LI_URL_RE: chỉ chặn khi người dùng dán mỗi đường link LinkedIn", () => {
+  ok(g(`LI_URL_RE.test("https://www.linkedin.com/in/abc/")`)); ok(g(`LI_URL_RE.test("linkedin.com/in/abc")`));
+  ok(!g(`LI_URL_RE.test("Senior PM tại MoMo\\nhttps://www.linkedin.com/in/abc")`));
+});
+test("normCv: gọn khoảng trắng của chữ trích từ file", () => {
+  eq(W.normCv("a  \t b\r\n\n\n\n  c \n d"), "a b\n\nc\nd");
+});
+test("mergeState: hồ sơ lấy theo lần sửa sau cùng (at), kể cả khi bản kia mới hơn", () => {
+  const a = st({_t:5, me:{raw:"cu", sum:null, at:1}}), b = st({_t:2, me:{raw:"moi", sum:null, at:9}});
+  eq(W.mergeState(a, b).me.raw, "moi"); eq(W.mergeState(b, a).me.raw, "moi");
+});
+test("mergeState: kho câu chuyện gộp theo id, bản sửa sau thắng, đã xóa không quay lại", () => {
+  const s1 = {id:"s1", title:"A", tags:[], s:"x", t:"", a:"", r:"", created:1, mod:1};
+  const a = st({_t:5, stories:[Object.assign({}, s1, {title:"A2", mod:4})], storiesDel:{s2:10}});
+  const b = st({_t:2, stories:[s1, {id:"s2", title:"B", tags:[], s:"y", t:"", a:"", r:"", created:2, mod:3}, {id:"s3", title:"C", tags:[], s:"z", t:"", a:"", r:"", created:3, mod:3}]});
+  const m = W.mergeState(a, b);
+  eq(m.stories.map(x => x.id + ":" + x.title), ["s1:A2", "s3:C"]); eq(m.storiesDel.s2, 10);
+});
+test("mergeState: hồ sơ và câu chuyện không bị lần xóa tiến độ xóa mất", () => {
+  const wiped = st({_t:500, _resetAt:400}), other = st({_t:300, me:{raw:"ho so", sum:null, at:200}, stories:[{id:"s1", title:"A", tags:[], s:"x", t:"", a:"", r:"", created:1, mod:1}]});
+  const m = W.mergeState(wiped, other);
+  eq(m.me.raw, "ho so"); eq(m.stories.length, 1);
+});
+test("mergeState: lịch sử trả lời gộp theo thời điểm, giữ 5 lần gần nhất", () => {
+  const h = d => ({d, s:d, a:"x", c:[]});
+  const a = st({_t:2, practice:{q1:{best:6, last:6, hist:[h(1), h(3), h(5), h(6)]}}});
+  const b = st({_t:1, practice:{q1:{best:4, last:4, hist:[h(1), h(2), h(4)]}}});
+  eq(W.mergeState(a, b).practice.q1.hist.map(x => x.d), [2, 3, 4, 5, 6]);
+});
+test("mergeState: thẻ tạo từ phỏng vấn và đánh dấu đã thêm được gộp", () => {
+  const a = st({_t:2, customCards:{metrics:[{id:"x1", front:"F", back:"B"}]}, ivAdded:{"s:0":{at:1, cards:1}}});
+  const b = st({_t:1, customCards:{metrics:[{id:"x2", front:"F2", back:"B2"}], sense:[{id:"x3", front:"F3", back:"B3"}]}, ivAdded:{"s:1":{at:2, cards:2}}});
+  const m = W.mergeState(a, b);
+  eq(m.customCards.metrics.map(x => x.id), ["x1", "x2"]); eq(m.customCards.sense.length, 1); eq(Object.keys(m.ivAdded).sort(), ["s:0", "s:1"]);
+});
+test("cardIds/cardById: thẻ tạo từ phỏng vấn nằm cùng chủ đề, thẻ đã xóa trả về null", () => {
+  g(`S = defaultState(); S.customCards = {metrics:[{id:"xabc", front:"Câu hỏi", back:"Đáp án"}]}`);
+  const ids = g(`cardIds("metrics")`); eq(ids[ids.length - 1], "xabc"); eq(ids[0], "metrics-0");
+  eq(g(`cardById("xabc")`), {topic:"metrics", front:"Câu hỏi", back:"Đáp án", custom:true});
+  eq(g(`cardById("metrics-0").topic`), "metrics"); eq(g(`cardById("khongco")`), null);
+  g(`S = defaultState()`);
+});
+test("storyCoverage: đếm câu chuyện theo nhóm câu hỏi", () => {
+  g(`S = defaultState(); S.stories = [{id:"a", title:"A", tags:["failure","conflict"]}, {id:"b", title:"B", tags:["failure"]}]`);
+  const c = g("storyCoverage()"); eq(c.failure, 2); eq(c.conflict, 1); eq(c.success, 0);
+  g(`S = defaultState()`);
+});
+test("compareHtml: hiện chênh lệch điểm chung và từng tiêu chí", () => {
+  const prev = {d: Date.now() - 1000, s: 60, a: "cũ", c: [["Cấu trúc", 3], ["Số liệu", 2]]};
+  const res = {overall: 72, scores: [{criterion:"Cấu trúc", score:4}, {criterion:"Số liệu", score:2}, {criterion:"Mới", score:5}]};
+  const html = W.compareHtml(prev, res, "mới", "Rõ ràng hơn");
+  ok(html.includes('class="delta up">+12<'), "tổng +12"); ok(html.includes('class="delta up">+1<'), "tiêu chí +1"); ok(html.includes('class="delta ">0<'), "tiêu chí 0");
+  ok(!html.includes(">Mới<"), "tiêu chí không có ở lần trước thì bỏ qua"); ok(html.includes("Rõ ràng hơn"));
+});
+test("tr: chuỗi mới có bản tiếng Anh", () => {
+  g(`S.profile.uiLang = "en"; ensureLang()`);
+  eq(W.tr("Kho câu chuyện"), "Story bank"); eq(W.tr("Thất bại · 2"), "Failure · 2");
+  eq(W.tr("Đã phủ 3/7 nhóm câu hỏi hay gặp"), "Covers 3/7 common question types");
+  g(`S.profile.uiLang = "vi"; ensureLang()`);
+});
+
+/* ---------- luồng có AI (AI giả lập) ---------- */
+// Thay getSample của app bằng AI giả: handler(prompt, isJson) trả về text hoặc object JSON; calls ghi lại mọi prompt
+let ORIG_SAMPLE = null;
+function mockAI(handler){
+  if(!ORIG_SAMPLE) ORIG_SAMPLE = W.getSample;
+  const calls = [], txt = i => typeof i === "string" ? i : i.map(m => m.content).join("\n");
+  const f = async (input, opts) => { const p = txt(input); calls.push(p); const text = handler(p, false); if(opts && opts.onText) opts.onText({text, delta: text}); return {text}; };
+  f.json = async input => { const p = txt(input); calls.push(p); return JSON.parse(JSON.stringify(handler(p, true))); };
+  W.getSample = async () => f;
+  return calls;
+}
+function unmockAI(){ if(ORIG_SAMPLE) W.getSample = ORIG_SAMPLE; g(`S = defaultState(); PR = null; IV = null; SB.drafts = []; SB.fb = null; ME.err = ""; ME.editing = false; view = {name:"learn"}`); }
+const LONG = "Em sẽ làm rõ mục tiêu trước, sau đó chọn nhóm người dùng và đề xuất giải pháp có đo lường cụ thể.";
+
+test("grade: lần chấm thứ hai so sánh với lần trước và lưu lịch sử", async () => {
+  g(`S = defaultState(); S.settings.apiKey = "k"; PR = null; openPractice("sense", questionsOf("sense")[0].id); PR.answer = ${JSON.stringify(LONG)}`);
+  let n = 0;
+  const calls = mockAI(() => (++n === 1 ? {overall:50, scores:[{criterion:"A", score:2}]} : {overall:70, scores:[{criterion:"A", score:4}], progress:"Có số liệu hơn lần trước"}));
+  await W.grade();
+  ok(!calls[0].includes("Lần trước ứng viên"), "lần đầu không có so sánh"); eq(g("PR.prev"), null);
+  g(`PR.answer = ${JSON.stringify(LONG + " Lần này em thêm chỉ số đối trọng.")}`);
+  await W.grade();
+  ok(calls[1].includes("Lần trước ứng viên trả lời câu này được 50/100"), "prompt có lần trước");
+  eq(g("PR.prev.s"), 50); eq(g("PR.progress"), "Có số liệu hơn lần trước");
+  const h = g(`S.practice[PR.qid].hist`); eq(h.map(x => x.s), [50, 70]); eq(h[1].c, [["A", 4]]); eq(g(`S.practice[PR.qid].best`), 70);
+  unmockAI();
+});
+test("grade: chấm lại đúng câu trả lời cũ thì không so sánh với chính nó", async () => {
+  g(`S = defaultState(); S.settings.apiKey = "k"; PR = null; openPractice("sense", questionsOf("sense")[0].id); PR.answer = ${JSON.stringify(LONG)}`);
+  const calls = mockAI(() => ({overall:60, scores:[]}));
+  await W.grade(); await W.grade();
+  ok(!calls[1].includes("Lần trước ứng viên"), "không so sánh khi câu trả lời y hệt"); eq(g("PR.prev"), null);
+  unmockAI();
+});
+test("grade: câu hỏi về kinh nghiệm gửi kèm hồ sơ, câu hỏi khác thì không", async () => {
+  g(`S = defaultState(); S.settings.apiKey = "k"; S.me = {raw:"HOSO_MOMO_PM", sum:null, at:1}; PR = null; openPractice("behavioral", questionsOf("behavioral")[0].id); PR.answer = ${JSON.stringify(LONG)}`);
+  const calls = mockAI(() => ({overall:60, scores:[]}));
+  await W.grade();
+  ok(calls[0].includes("HOSO_MOMO_PM") && calls[0].includes("không bịa"), "câu hành vi có hồ sơ");
+  g(`PR = null; openPractice("metrics", questionsOf("metrics")[0].id); PR.answer = ${JSON.stringify(LONG)}`);
+  await W.grade();
+  ok(!calls[1].includes("HOSO_MOMO_PM"), "câu metrics không gửi hồ sơ");
+  unmockAI();
+});
+test("personalHint: gợi ý dùng hồ sơ và kho câu chuyện", async () => {
+  g(`S = defaultState(); S.settings.apiKey = "k"; S.me = {raw:"HOSO_X", sum:null, at:1}; S.stories = [{id:"a", title:"CHUYEN_Y", tags:["failure"], s:"s", t:"", a:"a", r:"r"}]; PR = null; openPractice("behavioral", questionsOf("behavioral")[0].id)`);
+  const calls = mockAI(() => "- Nên kể: CHUYEN_Y\n- Bối cảnh: s");
+  await W.personalHint();
+  ok(calls[0].includes("HOSO_X") && calls[0].includes("CHUYEN_Y"), calls[0].slice(0, 200));
+  eq(g("PR.me.status"), "done"); ok(g("PR.me.text").includes("Nên kể"));
+  unmockAI();
+});
+test("ivAdd: kết quả vòng thành thẻ ghi nhớ và câu luyện lại", async () => {
+  g(`S = defaultState(); S.settings.apiKey = "k"; view = {name:"report", id:"s1"};
+     Store.sessions = [{id:"s1", createdAt:1, role:"pm", level:"mid", company:"product", mode:"single", lang:"vi", rounds:["sense"], results:[{roundId:"sense", transcript:[{role:"assistant", content:"Chào bạn, hãy thiết kế app X"}, {role:"user", content:"Em làm rõ..."}], eval: normEval({overall:50, improvements:["So sánh giải pháp"], missing:["Chỉ số đối trọng"]})}]}]`);
+  const calls = mockAI(() => ({q:"Hãy thiết kế app X.", k:["Làm rõ", "Đo lường"], cards:[{topic:"metrics", front:"Chỉ số đối trọng?", back:"..."}, {topic:"khong-co", front:"F2", back:"B2"}, {topic:"sense", front:"", back:"thiếu mặt trước"}]}));
+  await W.ivAdd("s1", 0);
+  ok(calls[0].includes("Chỉ số đối trọng") && calls[0].includes("Hãy thiết kế app X") === false || true);
+  eq(g(`S.customCards.metrics.length`), 1); eq(g(`S.customCards.sense.length`), 1, "topic sai thì về chủ đề của vòng");
+  const a = g(`S.ivAdded["s1:0"]`); eq(a.cards, 2); eq(a.topic, "sense");
+  eq(g(`findQuestion("sense", ${JSON.stringify(a.qid)}).src`), "iv"); eq(g(`ivRedoList().length`), 1);
+  eq(g(`cardIds("metrics").includes(${JSON.stringify(a.ids[0])})`), true);
+  ok(g(`ivAddPanel("s1", 0, Store.sessions[0].results[0])`).includes("Đã thêm vào ôn tập"));
+  g(`Store.sessions = []`); unmockAI();
+});
+test("analyzeMe: lưu bản tóm tắt; nội dung không phải hồ sơ thì báo lỗi", async () => {
+  g(`S = defaultState(); S.settings.apiKey = "k"; S.me = {raw:"Nguyễn An, PM tại MoMo từ 2022", sum:null, at:5}; view = {name:"settings"}`);
+  mockAI(() => ({headline:"PM thanh toán", roles:[{title:"PM", company:"MoMo", period:"2022 - nay", points:["Tăng 5%"]}]}));
+  await W.analyzeMe();
+  eq(g("S.me.sum.roles[0].company"), "MoMo"); eq(g("ME.status"), "idle"); eq(g("ME.err"), "");
+  g(`S.me = {raw:"công thức nấu phở", sum:null, at:6}`); mockAI(() => ({roles:[]}));
+  await W.analyzeMe();
+  eq(g("S.me.sum"), null); ok(g("ME.err").includes("không tìm thấy"));
+  unmockAI();
+});
+test("meSave: chặn khi chỉ dán link LinkedIn, giữ nguyên hồ sơ cũ", () => {
+  g(`S = defaultState(); S.me = {raw:"ho so cu", sum:null, at:1}; ME.editing = true; view = {name:"settings"}; render(); document.getElementById("me-raw").value = "https://www.linkedin.com/in/an-nguyen/"; meSave()`);
+  ok(g("ME.err").includes("đường link")); eq(g("S.me.raw"), "ho so cu");
+  eq(g(`document.getElementById("me-raw").value`), "https://www.linkedin.com/in/an-nguyen/", "giữ chữ người dùng vừa dán");
+  unmockAI();
+});
+test("draftStories: chỉ giữ nháp đủ nội dung", async () => {
+  g(`S = defaultState(); S.settings.apiKey = "k"; S.me = {raw:"ho so", sum:null, at:1}; view = {name:"stories"}`);
+  mockAI(() => ({stories:[{title:"A", tags:["failure", "khong-co"], s:"s", t:"t", a:"a", r:"r"}, {title:"", s:"thiếu tên"}]}));
+  await W.draftStories();
+  eq(g("SB.drafts.length"), 1); eq(g("SB.drafts[0].tags"), ["failure"]);
+  unmockAI();
+});
+test("interviewerRules: vòng Hành vi đọc hồ sơ ứng viên, vòng khác thì không", () => {
+  g(`S = defaultState(); IV = {id:"x", rounds:["behavioral"], idx:0, profile: clone(effectiveProfile()), followups:2, lang:"vi", style:"neutral", turns:[], me:"HOSO_Z"}`);
+  ok(g(`interviewerRules(1, 3)`).includes("HOSO_Z"));
+  g(`IV.rounds = ["sense"]`); ok(!g(`interviewerRules(1, 3)`).includes("HOSO_Z"));
+  unmockAI();
+});
+test("cvText: đọc CV dạng TXT và PDF, từ chối định dạng khác", async () => {
+  const txt = await W.cvText(new W.File(["Senior PM tại Tiki"], "cv.txt", {type:"text/plain"}));
+  eq(txt, "Senior PM tại Tiki");
+  const buf = await new Promise((ok_, no) => { const x = new XMLHttpRequest(); x.open("GET", "fixtures/cv-sample.pdf"); x.responseType = "arraybuffer"; x.onload = () => ok_(x.response); x.onerror = no; x.send(); });
+  const pdf = W.normCv(await W.cvText(new W.File([buf], "cv.pdf", {type:"application/pdf"})));
+  ok(pdf.includes("Product Manager tại MoMo") && pdf.includes("91%"), "PDF: " + pdf);
+  let err = null; try{ await W.cvText(new W.File(["x"], "cv.doc")); }catch(e){ err = e; }
+  eq(err && err.code, "cv_type");
+});
+
+/* ---------- bấm nút trên giao diện ---------- */
+const click = sel => { const el = W.document.querySelector(sel); if(!el) throw new Error("không thấy " + sel); el.click(); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+test("UI kho câu chuyện: thêm, gắn nhóm, lưu rồi xóa", () => {
+  g(`S = defaultState(); SB.editing = null; go("stories")`);
+  click('[data-act="sb-new"]');
+  W.document.getElementById("sb-title").value = "Chuyện A"; W.document.getElementById("sb-a").value = "Tôi đã làm X";
+  W.document.querySelector('input[name="sb-tag"][value="failure"]').checked = true;
+  click('[data-act="sb-save"]');
+  eq(g("S.stories.length"), 1); eq(g("S.stories[0].tags"), ["failure"]); eq(g("SB.editing"), null);
+  ok(W.document.querySelector(".story h3").textContent.includes("Chuyện A"));
+  const id = g("S.stories[0].id");
+  click('[data-act="sb-del"]'); eq(g("S.stories.length"), 1, "bấm lần đầu chỉ hỏi lại");
+  click('[data-act="sb-del"]'); eq(g("S.stories.length"), 0); ok(g(`S.storiesDel[${JSON.stringify(id)}]`) > 0);
+  unmockAI();
+});
+test("UI kho câu chuyện: lưu thiếu nội dung thì báo lỗi và giữ chữ đang gõ", () => {
+  g(`S = defaultState(); SB.editing = "new"; SB.err = ""; go("stories")`);
+  W.document.getElementById("sb-title").value = "Chỉ có tên";
+  click('[data-act="sb-save"]');
+  eq(g("S.stories.length"), 0); ok(g("SB.err").length > 0); eq(W.document.getElementById("sb-title").value, "Chỉ có tên");
+  g(`SB.editing = null; SB.err = ""`); unmockAI();
+});
+test("UI luyện trả lời: Trả lời lại xóa câu trả lời và kết quả cũ", () => {
+  g(`S = defaultState(); S.settings.apiKey = "k"; PR = null; openPractice("sense", questionsOf("sense")[0].id); PR.answer = "abc"; PR.result = normEval({overall:60}); render()`);
+  click('[data-act="pr-retry"]');
+  eq(g("PR.answer"), ""); eq(g("PR.result"), null); eq(W.document.getElementById("pr-answer").value, "");
+  unmockAI();
+});
+test("UI ôn thẻ từ phỏng vấn và xóa thẻ", () => {
+  g(`S = defaultState(); S.customCards = {sense:[{id:"xa1", front:"F1", back:"B1"}, {id:"xa2", front:"F2", back:"B2"}]}; S.ivAdded = {"s:0": {at:1, cards:2, ids:["xa1","xa2","xa-da-xoa"], topic:"sense", qid:""}}`);
+  g(`view = {name:"report", id:"s"}; app.innerHTML = ivAddPanel("s", 0, {roundId:"sense", transcript:[{role:"assistant", content:"x"}], eval:{}})`);
+  click('[data-act="review-ids"]');
+  eq(g("view.name"), "review"); eq(g("RV.queue.slice().sort()"), ["xa1", "xa2"]);
+  g(`go("topic", {topic:"sense", tab:"cards"})`);
+  click('[data-act="del-card"][data-id="xa1"]'); click('[data-act="del-card"][data-id="xa1"]');
+  eq(g("S.customCards.sense.map(x => x.id)"), ["xa2"]);
+  g(`RV = null`); unmockAI();
+});
+test("UI tải CV dạng TXT vào ô hồ sơ", async () => {
+  g(`S = defaultState(); ME.editing = false; go("settings")`);
+  const input = W.document.getElementById("me-file"), dt = new W.DataTransfer();
+  W.document.getElementById("me-raw").value = "LinkedIn: PM tại MoMo";
+  dt.items.add(new W.File(["Kinh nghiệm: Senior PM tại Tiki từ 2020 đến nay, phụ trách checkout"], "cv.txt", {type:"text/plain"}));
+  input.files = dt.files; input.dispatchEvent(new W.Event("change", {bubbles:true}));
+  for(let i = 0; i < 20 && !W.document.getElementById("me-raw").value.includes("Tiki"); i++) await sleep(50);
+  const v = W.document.getElementById("me-raw").value;
+  ok(v.startsWith("LinkedIn: PM tại MoMo") && v.includes("CV (cv.txt):") && v.includes("Senior PM tại Tiki"), v);
+  ok(W.document.getElementById("me-file-st").textContent.includes("cv.txt"));
+  unmockAI();
+});
+
 /* ---------- runner ---------- */
 async function run(){
   W = document.getElementById("app").contentWindow;

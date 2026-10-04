@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Phòng phỏng vấn Product</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2457C5">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CareerLift">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet">
@@ -171,6 +178,31 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 .qitem .score{margin-left:auto;font-family:var(--display);font-weight:700;white-space:nowrap}
 .tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);font-weight:500}
 .tag.ai{background:var(--blue-soft);color:var(--blue)}
+.tag.cov{font-size:.82rem;padding:4px 10px;opacity:.7}
+.tag.cov.on{background:var(--green-soft);color:var(--green);opacity:1}
+.chip.chk{position:relative;user-select:none}
+.chip.chk input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.chip.chk:has(input:checked){border-color:var(--blue);background:var(--blue-soft);color:var(--blue);font-weight:500}
+.chip.chk:has(input:focus-visible){outline:3px solid var(--blue);outline-offset:2px}
+.file-btn{position:relative;cursor:pointer}
+.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.file-btn:has(input:focus-visible){outline:3px solid var(--blue);outline-offset:2px}
+.star{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 14px;margin:0}
+.star dt{font-weight:500;color:var(--ink-2);font-size:.9rem}
+.star dd{margin:0}
+@media (max-width:520px){.star{grid-template-columns:1fr}.star dd{margin-bottom:6px}}
+.story-fb{width:100%}
+.me-roles li b{font-weight:600}
+.cmp-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;font-size:1.05rem}
+.cmp-head b{font-family:var(--display);font-size:1.3rem}
+.cmp-rows{display:grid;gap:6px}
+.cmp-row{display:grid;grid-template-columns:minmax(0,1fr) 24px 16px 24px 44px;gap:8px;align-items:center;font-size:.92rem}
+.cmp-row b,.cmp-row .muted{text-align:right}
+.delta{font-weight:600;font-size:.9rem;color:var(--ink-2)}
+.delta.up{color:var(--green)}
+.delta.down{color:var(--red)}
+.cmp-ans{margin-top:12px}
+.cmp-ans .prewrap{background:var(--surface-2);border-radius:10px;padding:12px;font-size:.92rem;max-height:340px;overflow:auto}
 
 /* Results */
 .verdict{display:flex;align-items:center;gap:18px;padding:18px 20px;border-radius:16px;background:var(--vbg);color:var(--ink)}
@@ -1292,7 +1324,7 @@ const LESSON_BY_ID = Object.fromEntries(Object.values(LESSONS).flat().map(l => [
 const LS_KEY = "pmprep:v1", LS_SESS = "pmprep:sessions:v1";
 const DAY = 86400000;
 function defaultState(){
-  return {v:1, profile:{role:"pm", level:"mid", company:"product", jd:"", lang:"vi", style:"neutral", followups:3, activeJd:"", uiLang:"vi", market:"vn"}, cards:{}, scores:[], custom:{}, practice:{}, lessons:{}, jds:[], customLessons:{}, settings:{apiKey:"", model:"", keyMod:0}};
+  return {v:1, profile:{role:"pm", level:"mid", company:"product", jd:"", lang:"vi", style:"neutral", followups:3, activeJd:"", uiLang:"vi", market:"vn"}, cards:{}, scores:[], custom:{}, practice:{}, lessons:{}, jds:[], customLessons:{}, settings:{apiKey:"", model:"", keyMod:0}, me:{raw:"", sum:null, at:0}, stories:[], storiesDel:{}, customCards:{}, ivAdded:{}};
 }
 function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
@@ -1307,10 +1339,19 @@ function normalize(raw){
   if(!MARKETS[s.profile.market]) s.profile.market = "vn";
   s.cards = s.cards || {}; s.scores = Array.isArray(s.scores) ? s.scores : []; s.custom = s.custom || {}; s.practice = s.practice || {}; s.lessons = s.lessons || {}; s.customLessons = s.customLessons || {};
   s.jds = Array.isArray(s.jds) ? s.jds : [];
+  s.me = normMe(s.me);
+  s.stories = Array.isArray(s.stories) ? s.stories.filter(x => x && x.id) : []; s.storiesDel = s.storiesDel && typeof s.storiesDel === "object" ? s.storiesDel : {};
+  s.customCards = s.customCards && typeof s.customCards === "object" ? s.customCards : {}; s.ivAdded = s.ivAdded && typeof s.ivAdded === "object" ? s.ivAdded : {};
   if(s.profile.jd && s.profile.jd.trim() && !s.jds.length){ const id = "jd" + Date.now().toString(36); s.jds.push({id, name:"JD đã lưu", role:s.profile.role, level:s.profile.level, company:s.profile.company, text:s.profile.jd, createdAt:Date.now(), analysis:null}); s.profile.activeJd = id; }
   s.profile.jd = "";
   if(!s.jds.some(j => j.id === s.profile.activeJd)) s.profile.activeJd = "";
   return s;
+}
+// Hồ sơ LinkedIn: raw là nội dung người dùng dán, sum là bản tóm tắt AI, at là lần sửa sau cùng (dùng khi gộp đồng bộ)
+function normMe(m){
+  m = m && typeof m === "object" ? m : {};
+  const sum = m.sum && typeof m.sum === "object" ? m.sum : null;
+  return {raw: typeof m.raw === "string" ? m.raw : "", sum, at: Number(m.at) || 0};
 }
 let S = normalize(lsGet(LS_KEY));
 const Store = {db:null, uid:null, ready:false, sessions: lsGet(LS_SESS) || [], timer:null, note:""};
@@ -1369,16 +1410,34 @@ function mergeState(a, b){
   const ks = (od.settings.keyMod || 0) > (nw.settings.keyMod || 0) ? od.settings : nw.settings;
   out.settings = {apiKey: ks.apiKey, model: ks.model, keyMod: ks.keyMod || 0};
   if(!out.settings.apiKey && !nw.settings.keyMod && !od.settings.keyMod && od.settings.apiKey) Object.assign(out.settings, {apiKey: od.settings.apiKey, model: od.settings.model});
+  // Hồ sơ LinkedIn và kho câu chuyện là nội dung người dùng tự nhập (như JD), không bị "Xóa toàn bộ tiến độ" xóa
+  if((od.me.at || 0) > (out.me.at || 0)) out.me = clone(od.me);
+  for(const [id, ts] of Object.entries(od.storiesDel)) out.storiesDel[id] = Math.max(out.storiesDel[id] || 0, ts || 0);
+  const sm = new Map(); for(const x of od.stories.concat(out.stories)){ const c = sm.get(x.id); if(!c || (x.mod || 0) >= (c.mod || 0)) sm.set(x.id, x); }
+  out.stories = [...sm.values()].filter(x => !(out.storiesDel[x.id] >= (x.mod || 0))).sort((a, b) => (a.created || 0) - (b.created || 0));
   if((od._t || 0) < reset) return out;
   for(const [id, r] of Object.entries(od.cards)){ const c = out.cards[id]; if(!c || (r.n || 0) > (c.n || 0) || ((r.n || 0) === (c.n || 0) && (r.due || 0) > (c.due || 0))) out.cards[id] = r; }
   const sk = x => x.t + "|" + x.d + "|" + (x.src || ""), seen = new Set(out.scores.map(sk));
   for(const x of od.scores) if(!seen.has(sk(x))){ seen.add(sk(x)); out.scores.push(x); }
   out.scores = out.scores.filter(x => x.d > reset).sort((x, y) => x.d - y.d).slice(-400);
-  for(const [id, r] of Object.entries(od.practice)){ const c = out.practice[id]; out.practice[id] = c ? {best: Math.max(c.best || 0, r.best || 0), last: Math.max(c.last || 0, r.last || 0)} : r; }
+  for(const [id, r] of Object.entries(od.practice)){
+    const c = out.practice[id];
+    if(!c){ out.practice[id] = r; continue; }
+    const m = {best: Math.max(c.best || 0, r.best || 0), last: Math.max(c.last || 0, r.last || 0)};
+    const hist = mergeHist(c.hist, r.hist); if(hist.length) m.hist = hist;
+    out.practice[id] = m;
+  }
   for(const [id, ts] of Object.entries(od.lessons)) out.lessons[id] = Math.max(out.lessons[id] || 0, ts || 0);
-  for(const k of ["custom", "customLessons"]) for(const [t, xs] of Object.entries(od[k])){ const have = out[k][t] || [], ids = new Set(have.map(x => x.id)); out[k][t] = have.concat((xs || []).filter(x => !ids.has(x.id))); }
+  for(const [k, v] of Object.entries(od.ivAdded)) if(!out.ivAdded[k]) out.ivAdded[k] = v;
+  for(const k of ["custom", "customLessons", "customCards"]) for(const [t, xs] of Object.entries(od[k])){ const have = out[k][t] || [], ids = new Set(have.map(x => x.id)); out[k][t] = have.concat((xs || []).filter(x => !ids.has(x.id))); }
   return out;
 }
+// Lịch sử các lần trả lời một câu (để so sánh): gộp theo thời điểm, giữ 5 lần gần nhất
+function mergeHist(a, b){
+  const m = new Map(); for(const h of (a || []).concat(b || [])) if(h && h.d) m.set(h.d, h);
+  return [...m.values()].sort((x, y) => x.d - y.d).slice(-HIST_MAX);
+}
+const HIST_MAX = 5;
 function mergeSessions(a, b, resetAt){
   const m = new Map();
   for(const s of (a || []).concat(b || [])){ if(!s || !s.id) continue; const c = m.get(s.id); if(!c || (s.results || []).length > (c.results || []).length) m.set(s.id, s); }
@@ -1544,8 +1603,13 @@ function verdictOf(n){ return n >= 70 ? "pass" : n >= 55 ? "borderline" : "fail"
 const VERDICT_TEXT = {pass:"Đạt", borderline:"Cân nhắc", fail:"Chưa đạt"};
 function fmtDate(ts){ const d = new Date(ts); return d.toLocaleDateString((isEn() ? "en-GB" : "vi-VN"),{day:"numeric",month:"numeric"}) + " " + d.toLocaleTimeString((isEn() ? "en-GB" : "vi-VN"),{hour:"2-digit",minute:"2-digit"}); }
 function fmtInterval(days){ if(days < 1) return "10 phút"; const r = Math.round(days); return r + " ngày"; }
-function cardIds(topic){ return CARDS[topic].map((_, i) => topic + "-" + i); }
-function cardById(id){ const [t, i] = id.split("-"); return {topic:t, front:CARDS[t][+i][0], back:CARDS[t][+i][1]}; }
+// Thẻ có sẵn có id "chủ-đề-số"; thẻ tạo từ phỏng vấn nằm trong S.customCards với id riêng
+function cardIds(topic){ return CARDS[topic].map((_, i) => topic + "-" + i).concat((S.customCards[topic] || []).map(c => c.id)); }
+function cardById(id){
+  for(const [t, xs] of Object.entries(S.customCards)){ const c = (xs || []).find(x => x.id === id); if(c) return {topic:t, front:c.front, back:c.back, custom:true}; }
+  const [t, i] = String(id).split("-"), c = CARDS[t] && CARDS[t][+i];
+  return c ? {topic:t, front:c[0], back:c[1]} : null;
+}
 function isDue(id){ const r = S.cards[id]; return !r || r.due <= Date.now(); }
 function dueIds(topic){ return (topic ? cardIds(topic) : TOPICS.flatMap(t => cardIds(t.id))).filter(isDue); }
 function learnedCount(topic){ return cardIds(topic).filter(id => S.cards[id] && S.cards[id].i >= 3).length; }
@@ -1687,7 +1751,7 @@ function routeOf(v){
     case "practice": return "#/practice/" + e(v.topic) + "/" + e(v.qid);
     case "quiz": return "#/quiz/" + e(v.topic);
     case "report": return "#/report/" + e(v.id);
-    case "review": case "interview": case "settings": return "#/" + v.name;
+    case "review": case "interview": case "settings": case "stories": return "#/" + v.name;
     default: return "#/";
   }
 }
@@ -1700,7 +1764,7 @@ function parseRoute(h){
   if(name === "practice" && TOPIC[a] && b) return {name, topic: a, qid: b};
   if(name === "quiz" && TOPIC[a]) return {name, topic: a};
   if(name === "report" && a) return {name, id: a};
-  if(["review","interview","settings"].includes(name)) return {name};
+  if(["review","interview","settings","stories"].includes(name)) return {name};
   return {name: "learn"};
 }
 // Trang cần dữ liệu tạm (thẻ đang ôn, bài test, câu đang luyện) mà không còn thì về trang cha gần nhất
@@ -1735,17 +1799,18 @@ function restoreLive(){
   if(IV && IV.status === "asking"){ IV.status = "error"; IV.err = "Trang đã tải lại khi người phỏng vấn đang hỏi. Bấm Hỏi lại để tiếp tục."; }
   if(IV && IV.status === "evaluating"){ IV.status = "evalError"; IV.err = "Trang đã tải lại khi đang chấm điểm. Bấm Chấm lại để tiếp tục."; }
   if(PR && PR.status === "loading") PR.status = "idle";
+  if(PR && PR.me && PR.me.status === "loading") PR.me = null;
 }
 function busyWithAI(){
-  return !!(IV && (IV.status === "asking" || IV.status === "evaluating")) || !!(PR && PR.status === "loading") || GL.status === "loading" || qgenState.status === "loading" || genState.status === "loading" || jdAn.status === "loading";
+  return !!(IV && (IV.status === "asking" || IV.status === "evaluating")) || !!(PR && PR.status === "loading") || GL.status === "loading" || qgenState.status === "loading" || genState.status === "loading" || jdAn.status === "loading" || ME.status === "loading" || SB.draftStatus === "loading" || IVA.status === "loading";
 }
 window.addEventListener("beforeunload", e => { if(busyWithAI()){ e.preventDefault(); e.returnValue = ""; } });
-function navKey(){ return {learn:"learn", topic:"learn", practice:"learn", quiz:"learn", lesson:"learn", newlesson:"learn", review:"learn", interview:"interview", report:"interview", settings:"settings"}[view.name] || "learn"; }
+function navKey(){ return {learn:"learn", topic:"learn", practice:"learn", quiz:"learn", lesson:"learn", newlesson:"learn", review:"learn", stories:"learn", interview:"interview", report:"interview", settings:"settings"}[view.name] || "learn"; }
 function render(){
   ensureLang();
   document.querySelectorAll(".nav button").forEach(b => b.toggleAttribute("aria-current", false));
   const cur = document.querySelector(`.nav button[data-go="${navKey()}"]`); if(cur) cur.setAttribute("aria-current","page");
-  const fn = {learn:vLearn, topic:vTopic, review:vReview, practice:vPractice, quiz:vQuiz, lesson:vLesson, newlesson:vNewLesson, interview:vInterview, report:vReport, settings:vSettings}[view.name] || vLearn;
+  const fn = {learn:vLearn, topic:vTopic, review:vReview, practice:vPractice, quiz:vQuiz, lesson:vLesson, newlesson:vNewLesson, interview:vInterview, report:vReport, settings:vSettings, stories:vStories}[view.name] || vLearn;
   app.innerHTML = fn();
   translateDom(app);
   afterRender();
@@ -1778,6 +1843,7 @@ function vSettings(){
   return `<div class="stack" style="--gap:24px">
   <h1>Cài đặt</h1>
   ${homeTargetHtml()}
+  ${mePanel()}
   ${IN_CLAUDE ? "" : `<section class="panel stack" style="--gap:12px">
     <h2>Cài đặt AI</h2>
     ${getKey() ? `<p class="small">Đã lưu Gemini API key. Model đang dùng: <b>${esc(getModel() || DEFAULT_MODEL)}</b>.</p>
@@ -1913,8 +1979,345 @@ function jdStatsHtml(){
 }
 
 /* ================= LEARN ================= */
+/* ================= HỒ SƠ KINH NGHIỆM (LinkedIn) ================= */
+// Người dùng dán nội dung hồ sơ LinkedIn (LinkedIn không cho trình duyệt đọc trực tiếp từ link).
+// AI tóm tắt thành các vị trí đã làm; bản tóm tắt cùng kho câu chuyện được gửi kèm prompt của câu hỏi về kinh nghiệm.
+let ME = {editing:false, status:"idle", err:""};
+const LI_URL_RE = /^\s*(https?:\/\/)?([\w-]+\.)?linkedin\.com\/\S*\s*$/i;
+function hasMe(){ return !!S.me.raw.trim(); }
+function normMeSum(o){
+  o = o && typeof o === "object" ? o : {};
+  const arr = (x, n) => Array.isArray(x) ? x.map(v => clean(v)).filter(Boolean).slice(0, n) : [];
+  const roles = (Array.isArray(o.roles) ? o.roles : []).filter(r => r && typeof r === "object")
+    .map(r => ({title: clean(r.title), company: clean(r.company), period: clean(r.period), points: arr(r.points, 5)}))
+    .filter(r => r.title || r.company).slice(0, 10);
+  return {headline: clean(o.headline), years: clean(o.years), roles, skills: arr(o.skills, 15), education: arr(o.education, 4)};
+}
+function meSumText(sm){
+  const L = [];
+  if(sm.headline) L.push(sm.headline);
+  if(sm.years) L.push("Số năm kinh nghiệm: " + sm.years);
+  for(const r of sm.roles) L.push("- " + [r.title, r.company, r.period].filter(Boolean).join(", ") + (r.points.length ? ": " + r.points.join("; ") : ""));
+  if(sm.skills.length) L.push("Kỹ năng: " + sm.skills.join(", "));
+  if(sm.education.length) L.push("Học vấn: " + sm.education.join("; "));
+  return L.join("\n");
+}
+function meText(){ return S.me.sum ? meSumText(normMeSum(S.me.sum)) : S.me.raw.trim().slice(0, 6000); }
+const EXP_RE = /kể về|kể cho|một lần|kinh nghiệm|bản thân|sự nghiệp|vì sao bạn|giới thiệu về|thất bại|xung đột|bất đồng|tell me|a time|walk me through|your experience|yourself|your career|why do you want|why (are|did) you|failure|conflict|disagree/i;
+// Câu hỏi về kinh nghiệm: mọi câu của chủ đề Hành vi, hoặc câu có dấu hiệu hỏi về trải nghiệm của bản thân
+function isExpQ(topic, text){ return topic === "behavioral" || EXP_RE.test(text || ""); }
+function storyReady(x){ return !!(x && x.title && (x.s || x.a || x.r)); }
+function hasPersonal(){ return hasMe() || S.stories.some(storyReady); }
+function storyText(x){ return `"${x.title}"${x.tags.length ? " (" + x.tags.map(t => STORY_TAGS[t] || t).join(", ") + ")" : ""}. Bối cảnh: ${x.s} Nhiệm vụ: ${x.t} Hành động: ${x.a} Kết quả: ${x.r}`; }
+function personalCtx(){
+  const parts = [];
+  if(hasMe()) parts.push("Hồ sơ kinh nghiệm thật của ứng viên (từ LinkedIn, CV):\n\"\"\"\n" + meText() + "\n\"\"\"");
+  const st = S.stories.filter(storyReady);
+  if(st.length) parts.push("Kho câu chuyện STAR ứng viên đã chuẩn bị:\n" + st.slice(0, 12).map(x => "- " + storyText(x).slice(0, 900)).join("\n"));
+  return parts.join("\n");
+}
+const NO_INVENT = "Chỉ dùng chi tiết có trong hồ sơ và kho câu chuyện của ứng viên; không bịa công ty, dự án, chức danh hay số liệu. Chỗ còn thiếu thì ghi trong ngoặc vuông, ví dụ [điền số liệu thật].";
+async function analyzeMe(){
+  if(!hasMe()) return;
+  const at = S.me.at;
+  ME.status = "loading"; ME.err = ""; render();
+  try{
+    const sample = await needSample();
+    const prompt = `Dưới đây là nội dung hồ sơ LinkedIn và/hoặc CV một người vừa đưa vào. Nội dung có thể lẫn chữ thừa của giao diện LinkedIn hoặc định dạng file (nút bấm, số kết nối, gợi ý người khác, quảng cáo); bỏ qua những phần đó.
+"""
+${S.me.raw.trim().slice(0, 15000)}
+"""
+Tóm tắt kinh nghiệm làm việc của người này để dùng khi luyện phỏng vấn. Chỉ ghi điều có trong hồ sơ, không suy diễn, không bịa. Giữ nguyên tên công ty, chức danh và số liệu. Viết bằng tiếng Việt (tên riêng và chức danh giữ nguyên).
+roles xếp từ gần nhất, tối đa 8 vị trí, mỗi vị trí tối đa 4 points là việc đã làm hoặc thành tích cụ thể. Nếu nội dung không phải hồ sơ nghề nghiệp thì để roles rỗng.
+Chỉ trả về JSON: {"headline":"1 câu: vai trò hiện tại và thế mạnh chính","years":"tổng số năm đi làm, ví dụ 5 năm; để trống nếu không rõ","roles":[{"title":"chức danh","company":"công ty","period":"thời gian","points":["việc cụ thể, giữ số liệu"]}],"skills":["kỹ năng"],"education":["trường, ngành"]}`;
+    const sum = normMeSum(await sample.json(prompt, {cache:false}));
+    if(S.me.at === at){
+      if(!sum.roles.length && !sum.headline) throw {code:"not_profile"};
+      S.me.sum = sum; save();
+    }
+  }catch(e){ if(S.me.at === at) ME.err = e && e.code === "not_profile" ? "AI không tìm thấy kinh nghiệm làm việc trong nội dung đã dán. Kiểm tra lại nội dung rồi bấm Sửa." : aiErrText(e); }
+  ME.status = "idle";
+  if(view.name === "settings" || view.name === "stories") render();
+}
+function meSave(){
+  const raw = ((document.getElementById("me-raw") || {}).value || "").trim();
+  const fail = msg => { ME.err = msg; render(); const el = document.getElementById("me-raw"); if(el){ el.value = raw; el.focus(); } };
+  if(!raw) return fail("Dán hồ sơ LinkedIn hoặc tải CV lên trước khi lưu.");
+  if(LI_URL_RE.test(raw)) return fail("LinkedIn không cho app đọc hồ sơ từ đường link. Mở trang hồ sơ, chép nội dung theo hướng dẫn rồi dán vào đây.");
+  if(raw.length < 80) return fail("Nội dung quá ngắn. Hãy dán ít nhất phần Kinh nghiệm trong hồ sơ.");
+  ME.editing = false; ME.err = "";
+  if(raw === S.me.raw.trim() && S.me.sum){ render(); return; }
+  S.me = {raw, sum:null, at: Date.now()}; save();
+  if(needKey()) render(); else analyzeMe();
+}
+// Đọc CV ngay trên trình duyệt: PDF bằng pdf.js, DOCX bằng mammoth (tải từ CDN khi cần), TXT đọc thẳng
+const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/", MAMMOTH = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js";
+const CV_MAX = 10 * 1024 * 1024;
+function loadScript(src){ return new Promise((ok, no) => { const el = document.createElement("script"); el.src = src; el.onload = ok; el.onerror = () => no({code:"cv_lib"}); document.head.appendChild(el); }); }
+async function pdfText(buf){
+  if(!window.pdfjsLib) await loadScript(PDFJS + "pdf.min.js");
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js";
+  const doc = await window.pdfjsLib.getDocument({data: buf}).promise, out = [];
+  for(let i = 1; i <= Math.min(doc.numPages, 20); i++){
+    const tc = await (await doc.getPage(i)).getTextContent();
+    out.push(tc.items.map(it => (it.str || "") + (it.hasEOL ? "\n" : "")).join(""));
+  }
+  return out.join("\n\n");
+}
+async function docxText(buf){
+  if(!window.mammoth) await loadScript(MAMMOTH);
+  return (await window.mammoth.extractRawText({arrayBuffer: buf})).value || "";
+}
+async function cvText(file){
+  if(file.size > CV_MAX) throw {code:"cv_big"};
+  const name = (file.name || "").toLowerCase();
+  if(/\.(txt|md)$/.test(name) || file.type === "text/plain") return await file.text();
+  if(/\.pdf$/.test(name) || file.type === "application/pdf") return await pdfText(await file.arrayBuffer());
+  if(/\.docx$/.test(name)) return await docxText(await file.arrayBuffer());
+  throw {code:"cv_type"};
+}
+function cvErrText(e){
+  const c = e && e.code;
+  if(c === "cv_big") return "File lớn hơn 10 MB. Hãy chọn file nhỏ hơn.";
+  if(c === "cv_type") return "Chỉ đọc được file PDF, DOCX hoặc TXT. File .doc cũ hãy lưu lại thành .docx hoặc PDF.";
+  if(c === "cv_empty") return "Không đọc được chữ trong file. CV dạng ảnh scan thì hãy chép nội dung và dán vào ô bên dưới.";
+  if(c === "cv_lib") return "Không tải được công cụ đọc file (cần mạng). Hãy chép nội dung CV và dán vào ô bên dưới.";
+  return "Không đọc được file này. Hãy chép nội dung CV và dán vào ô bên dưới.";
+}
+async function meUpload(input){
+  const file = input.files && input.files[0]; input.value = "";
+  if(!file) return;
+  const st = document.getElementById("me-file-st"), setSt = (msg, err) => { if(st){ st.textContent = tr(msg); st.className = err ? "note err" : "small muted"; st.style.display = "block"; } };
+  setSt("Đang đọc " + file.name + "…");
+  try{
+    const text = normCv(await cvText(file));
+    if(text.length < 40) throw {code:"cv_empty"};
+    const ta = document.getElementById("me-raw"); if(!ta) return;
+    const cur = ta.value.trim();
+    ta.value = (cur ? cur + "\n\n" : "") + "CV (" + file.name + "):\n" + text;
+    setSt("Đã thêm nội dung từ " + file.name + ". Kiểm tra lại rồi bấm Lưu.");
+  }catch(e){ console.warn("cv", e); setSt(cvErrText(e), true); }
+}
+// Gọn khoảng trắng của chữ trích từ PDF/DOCX
+function normCv(t){ return String(t || "").replace(/\r/g, "").replace(/[ \t\u00a0]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim().slice(0, 30000); }
+function meSumHtml(sm){
+  sm = normMeSum(sm);
+  return `${sm.headline ? `<p><b>${esc(sm.headline)}</b>${sm.years ? `<span class="muted">, ${esc(sm.years)}</span>` : ""}</p>` : ""}
+    ${sm.roles.length ? `<ul class="list me-roles">${sm.roles.map(r => `<li><b>${esc(r.title)}</b>${r.company ? `, ${esc(r.company)}` : ""}${r.period ? ` <span class="small muted">${esc(r.period)}</span>` : ""}</li>`).join("")}</ul>` : ""}
+    ${sm.skills.length ? `<div class="chips">${sm.skills.map(k => `<span class="tag">${esc(k)}</span>`).join("")}</div>` : ""}`;
+}
+function meGuide(){
+  return guideBox(isEn() ? "How to copy your LinkedIn profile" : "Cách chép hồ sơ LinkedIn", isEn() ? `
+    <ol><li>Open your LinkedIn profile on a computer.</li>
+    <li>Click <b>More</b> → <b>Save to PDF</b>, then upload that PDF with the <b>Upload CV</b> button.</li>
+    <li>Or copy the <b>About</b>, <b>Experience</b> and <b>Education</b> sections straight from the profile page.</li>
+    <li>Paste below (you can combine it with your CV) and click Save. Leftover LinkedIn interface text is fine; AI ignores it.</li></ol>` : `
+    <ol><li>Mở trang hồ sơ LinkedIn của bạn trên máy tính.</li>
+    <li>Bấm <b>Thêm</b> (More) → <b>Lưu thành PDF</b> (Save to PDF), rồi tải file PDF đó lên bằng nút <b>Tải CV lên</b>.</li>
+    <li>Hoặc chép thẳng các mục <b>Giới thiệu</b>, <b>Kinh nghiệm</b>, <b>Học vấn</b> trên trang hồ sơ.</li>
+    <li>Dán vào ô bên dưới (có thể gộp cùng CV) rồi bấm Lưu. Lẫn chữ thừa của giao diện LinkedIn cũng không sao, AI sẽ bỏ qua.</li></ol>`);
+}
+function mePanel(){
+  const m = S.me, busy = ME.status === "loading";
+  const err = ME.err ? `<p class="note err">${esc(ME.err)}</p>` : "";
+  if(ME.editing || !hasMe()) return `<section class="panel stack" id="me-panel" style="--gap:12px">
+    <h2>Kinh nghiệm của bạn (LinkedIn, CV)</h2>
+    <p class="small muted">Dán hồ sơ LinkedIn hoặc tải CV lên để gợi ý, dàn ý tham khảo và ví dụ cho câu hỏi về kinh nghiệm dựa trên chính trải nghiệm của bạn, thay vì ví dụ chung chung.</p>
+    ${meGuide()}
+    <div class="row"><label class="btn file-btn"><input type="file" id="me-file" accept=".pdf,.docx,.txt,.md,application/pdf,text/plain">Tải CV lên (PDF, DOCX, TXT)</label><span class="small muted">File được đọc ngay trên máy bạn, không tải lên đâu cả.</span></div>
+    <p id="me-file-st" class="small muted" style="display:none" role="status"></p>
+    <label><span class="label">Nội dung hồ sơ</span><textarea id="me-raw" style="min-height:200px" placeholder="Dán nội dung hồ sơ LinkedIn hoặc CV: tiêu đề, giới thiệu, kinh nghiệm, học vấn">${esc(m.raw)}</textarea></label>
+    ${err}
+    <div class="row"><button class="btn primary" data-act="me-save">${needKey() ? "Lưu" : "Lưu và phân tích"}</button>${ME.editing && hasMe() ? `<button class="btn ghost" data-act="me-cancel">Hủy</button>` : ""}</div>
+    <p class="small muted">Hồ sơ được lưu cùng tiến độ và chỉ gửi cho AI khi bạn dùng gợi ý, chấm điểm, ôn thẻ hoặc phỏng vấn thử.</p>
+  </section>`;
+  return `<section class="panel stack" id="me-panel" style="--gap:12px">
+    <div class="row"><h2>Kinh nghiệm của bạn (LinkedIn, CV)</h2><span class="spacer"></span><button class="btn ghost" data-act="me-edit" ${busy ? "disabled" : ""}>Sửa</button><button class="btn ghost danger" data-act="me-del" ${busy ? "disabled" : ""}>Xóa</button></div>
+    ${busy ? `<p class="thinking">AI đang đọc hồ sơ của bạn. Thường mất 10 đến 30 giây.</p>`
+      : m.sum ? meSumHtml(m.sum)
+      : `<p class="small muted">Đã lưu nội dung hồ sơ (${m.raw.trim().length} ký tự). ${needKey() ? "Nhập Gemini API key để AI tóm tắt hồ sơ; trong lúc đó AI dùng nguyên văn nội dung bạn dán." : ""}</p>${needKey() ? "" : `<div class="row"><button class="btn" data-act="me-analyze">Phân tích hồ sơ</button></div>`}`}
+    ${err}
+    <p class="small muted">Được dùng cho gợi ý và dàn ý tham khảo khi luyện trả lời câu hỏi về kinh nghiệm, người phỏng vấn ở vòng HR và Hành vi, ví dụ khi ôn thẻ chủ đề Hành vi, và nháp trong <button class="linkbtn" data-go="stories">Kho câu chuyện</button>.</p>
+  </section>`;
+}
+
+/* ================= KHO CÂU CHUYỆN STAR ================= */
+const STORY_TAGS = {success:"Thành công", failure:"Thất bại", conflict:"Xung đột, bất đồng", influence:"Thuyết phục, ảnh hưởng", ambiguity:"Quyết định khi thiếu dữ liệu", leadership:"Dẫn dắt, phát triển người khác", customer:"Thấu hiểu khách hàng"};
+const STAR_PARTS = [["s","Bối cảnh (Situation)","Ở đâu, khi nào, vấn đề là gì, quy mô ra sao"],["t","Nhiệm vụ (Task)","Bạn chịu trách nhiệm gì, mục tiêu cụ thể"],["a","Hành động (Action)","Bạn đã làm gì, theo thứ tự, vì sao chọn cách đó. Phần dài nhất"],["r","Kết quả (Result)","Số liệu thay đổi, tác động, bài học rút ra"]];
+let SB = {editing:null, err:"", draftStatus:"idle", draftErr:"", drafts:[], fb:null};
+function normStory(o){
+  o = o && typeof o === "object" ? o : {};
+  return {title: clean(o.title).slice(0, 120), tags: (Array.isArray(o.tags) ? o.tags : []).filter(t => STORY_TAGS[t]).slice(0, 3), s: clean(o.s), t: clean(o.t), a: clean(o.a), r: clean(o.r)};
+}
+function storyCoverage(){ const c = {}; for(const k of Object.keys(STORY_TAGS)) c[k] = 0; for(const x of S.stories) for(const t of x.tags) if(t in c) c[t]++; return c; }
+function storyForm(id){
+  const x = id === "new" ? {title:"", tags:[], s:"", t:"", a:"", r:""} : (S.stories.find(y => y.id === id) || {title:"", tags:[], s:"", t:"", a:"", r:""});
+  return `<section class="panel stack" id="sb-form" style="--gap:14px">
+    <h2>${id === "new" ? "Thêm câu chuyện" : "Sửa câu chuyện"}</h2>
+    <label><span class="label">Tên gợi nhớ</span><input type="text" id="sb-title" maxlength="120" placeholder="Ví dụ: Cứu tỉ lệ thanh toán ví khi đối tác đổi API" value="${esc(x.title)}"></label>
+    <div><span class="label">Dùng cho nhóm câu hỏi (tối đa 3)</span><div class="chips">${Object.entries(STORY_TAGS).map(([k, v]) => `<label class="chip chk"><input type="checkbox" name="sb-tag" value="${k}"${x.tags.includes(k) ? " checked" : ""}>${esc(v)}</label>`).join("")}</div></div>
+    ${STAR_PARTS.map(([k, lab, ph]) => `<label><span class="label">${esc(lab)}</span><textarea id="sb-${k}" style="min-height:${k === "a" ? 130 : 80}px" placeholder="${esc(ph)}">${esc(x[k])}</textarea></label>`).join("")}
+    ${SB.err ? `<p class="note err">${esc(SB.err)}</p>` : ""}
+    <div class="row"><button class="btn primary" data-act="sb-save" data-id="${id}">Lưu</button><button class="btn ghost" data-act="sb-cancel">Hủy</button></div>
+  </section>`;
+}
+function storyFromForm(){
+  const v = k => ((document.getElementById("sb-" + k) || {}).value || "").trim();
+  const tags = [...document.querySelectorAll('input[name="sb-tag"]:checked')].map(i => i.value);
+  return normStory({title: v("title"), tags, s: v("s"), t: v("t"), a: v("a"), r: v("r")});
+}
+function storySave(id){
+  const f = storyFromForm();
+  if(!f.title || !(f.s || f.a || f.r)){ SB.err = "Đặt tên và viết ít nhất một phần của câu chuyện trước khi lưu."; render(); restoreStoryForm(f); return; }
+  if(f.tags.length > 3) f.tags = f.tags.slice(0, 3);
+  const now = Date.now();
+  if(id === "new") S.stories.push(Object.assign({id: "st" + uid(), created: now, mod: now}, f));
+  else { const x = S.stories.find(y => y.id === id); if(x) Object.assign(x, f, {mod: now}); }
+  SB.editing = null; SB.err = ""; if(SB.fb && SB.fb.id === id) SB.fb = null; save(); render();
+}
+// Giữ nội dung người dùng đang gõ khi phải vẽ lại form để báo lỗi
+function restoreStoryForm(f){
+  for(const k of ["title","s","t","a","r"]){ const el = document.getElementById("sb-" + k); if(el) el.value = f[k]; }
+  document.querySelectorAll('input[name="sb-tag"]').forEach(i => { i.checked = f.tags.includes(i.value); });
+}
+function storyCard(x){
+  const fb = SB.fb && SB.fb.id === x.id ? SB.fb : null;
+  return `<article class="panel stack story" style="--gap:10px">
+    <div class="row"><h3>${esc(x.title)}</h3><span class="spacer"></span>${x.src === "me" ? `<span class="tag ai">Nháp từ LinkedIn</span>` : ""}</div>
+    ${x.tags.length ? `<div class="chips">${x.tags.map(t => `<span class="tag">${esc(STORY_TAGS[t])}</span>`).join("")}</div>` : ""}
+    <dl class="star">${STAR_PARTS.map(([k, lab]) => x[k] ? `<dt>${esc(lab.split(" (")[0])}</dt><dd class="prewrap">${esc(x[k])}</dd>` : "").join("")}</dl>
+    ${fb ? `<div class="ai-box story-fb"><p class="small muted" style="margin-bottom:6px">AI góp ý</p>${fb.status === "loading" ? `<p class="thinking">AI đang đọc câu chuyện…</p>` : fb.err ? `<p class="note err">${esc(fb.err)}</p>` : `<ul class="list">${fb.items.map(t => `<li>${esc(t)}</li>`).join("")}</ul>${fb.improved ? `<div class="row" style="margin-top:10px"><button class="btn" data-act="sb-apply" data-id="${x.id}">Dùng bản AI đã gọt</button><span class="small muted">Bạn vẫn sửa lại được sau đó.</span></div>` : ""}`}</div>` : ""}
+    <div class="row"><button class="btn ghost" data-act="sb-edit" data-id="${x.id}">Sửa</button>${needKey() ? "" : `<button class="btn ghost" data-act="sb-fb" data-id="${x.id}" ${fb && fb.status === "loading" ? "disabled" : ""}>AI góp ý theo STAR</button>`}<span class="spacer"></span><button class="btn ghost danger" data-act="sb-del" data-id="${x.id}">Xóa</button></div>
+  </article>`;
+}
+function vStories(){
+  const cov = storyCoverage(), covered = Object.values(cov).filter(Boolean).length, total = Object.keys(STORY_TAGS).length;
+  const drafts = SB.drafts.length ? `<section class="stack" style="--gap:12px"><h2>Nháp từ hồ sơ LinkedIn</h2><p class="small muted">Đọc lại, sửa cho đúng sự thật và điền các chỗ trong ngoặc vuông trước khi dùng.</p>
+    ${SB.drafts.map((x, i) => `<article class="panel stack draft" style="--gap:10px"><h3>${esc(x.title)}</h3>${x.tags.length ? `<div class="chips">${x.tags.map(t => `<span class="tag">${esc(STORY_TAGS[t])}</span>`).join("")}</div>` : ""}
+      <dl class="star">${STAR_PARTS.map(([k, lab]) => x[k] ? `<dt>${esc(lab.split(" (")[0])}</dt><dd class="prewrap">${esc(x[k])}</dd>` : "").join("")}</dl>
+      <div class="row"><button class="btn primary" data-act="sb-keep" data-i="${i}">Lưu vào kho</button><button class="btn ghost" data-act="sb-drop" data-i="${i}">Bỏ</button></div></article>`).join("")}</section>` : "";
+  return `<div class="stack" style="--gap:24px">
+    <button class="btn ghost back" data-go="learn">← Kiến thức</button>
+    <div class="stack" style="--gap:8px"><h1>Kho câu chuyện</h1>
+    <p class="muted">Chuẩn bị 6 đến 8 câu chuyện thật theo STAR và dùng lại cho nhiều câu hỏi hành vi. Gợi ý, chấm điểm và người phỏng vấn thử sẽ dựa vào các câu chuyện này.</p></div>
+    <section class="panel stack" style="--gap:10px"><div class="row"><h2>Độ phủ</h2><span class="spacer"></span><span class="small muted">Đã phủ ${covered}/${total} nhóm câu hỏi hay gặp</span></div>
+      <div class="chips">${Object.entries(STORY_TAGS).map(([k, v]) => `<span class="tag cov${cov[k] ? " on" : ""}">${esc(v)}${cov[k] ? ` · ${cov[k]}` : ""}</span>`).join("")}</div></section>
+    ${SB.editing ? storyForm(SB.editing) : `<div class="row"><button class="btn primary" data-act="sb-new">Thêm câu chuyện</button>
+      ${hasMe() && !needKey() ? `<button class="btn" data-act="sb-draft" ${SB.draftStatus === "loading" ? "disabled" : ""}>${SB.draftStatus === "loading" ? "AI đang viết nháp…" : "Tạo nháp từ LinkedIn"}</button>` : ""}</div>
+      ${hasMe() ? "" : `<p class="small muted">Thêm hồ sơ LinkedIn ở <button class="linkbtn" data-go="settings">Cài đặt</button> để AI viết nháp câu chuyện từ kinh nghiệm thật của bạn.</p>`}`}
+    ${SB.draftStatus === "loading" ? `<p class="thinking">AI đang đọc hồ sơ và viết nháp câu chuyện. Thường mất 20 đến 40 giây.</p>` : ""}
+    ${SB.draftErr ? `<p class="note err">${esc(SB.draftErr)}</p>` : ""}
+    ${drafts}
+    ${S.stories.length ? `<section class="stack" style="--gap:14px"><h2>Câu chuyện của bạn (${S.stories.length})</h2>${S.stories.map(storyCard).join("")}</section>`
+      : SB.drafts.length || SB.editing ? "" : `<p class="small muted">Chưa có câu chuyện nào.</p>`}
+  </div>`;
+}
+async function draftStories(){
+  SB.draftStatus = "loading"; SB.draftErr = ""; render();
+  try{
+    const sample = await needSample();
+    const cov = storyCoverage(), missing = Object.keys(STORY_TAGS).filter(k => !cov[k]);
+    const prompt = `Bạn là coach phỏng vấn product, giúp ứng viên chuẩn bị kho câu chuyện cho câu hỏi hành vi.
+${profileText()}
+Hồ sơ kinh nghiệm thật của ứng viên (từ LinkedIn):
+"""
+${meText()}
+"""
+${S.stories.length ? "Câu chuyện đã có (đừng viết trùng):\n" + S.stories.map(x => "- " + x.title).join("\n") : ""}
+Viết nháp 4 câu chuyện STAR khác nhau dựa trên kinh nghiệm trong hồ sơ, mỗi câu chuyện gắn với một vị trí cụ thể trong hồ sơ${missing.length ? ", ưu tiên phủ các nhóm còn thiếu: " + missing.map(k => STORY_TAGS[k]).join(", ") : ""}.
+${NO_INVENT}
+Viết ở ngôi thứ nhất ("tôi"), mỗi phần 1 đến 3 câu, phần Hành động chi tiết nhất. Viết bằng tiếng Việt.
+tags chọn 1 đến 2 mã trong: ${Object.keys(STORY_TAGS).map(k => k + " (" + STORY_TAGS[k] + ")").join(", ")}.
+Chỉ trả về JSON: {"stories":[{"title":"tên ngắn gợi nhớ","tags":["failure"],"s":"bối cảnh","t":"nhiệm vụ","a":"hành động","r":"kết quả"}]}`;
+    const o = await sample.json(prompt, {cache:false});
+    const list = (o && Array.isArray(o.stories) ? o.stories : []).map(normStory).filter(storyReady).slice(0, 6);
+    if(!list.length) throw {code:"invalid_json"};
+    SB.drafts = list; SB.draftStatus = "idle";
+  }catch(e){ SB.draftStatus = "idle"; SB.draftErr = aiErrText(e); }
+  if(view.name === "stories") render();
+}
+async function storyFeedback(id){
+  const x = S.stories.find(y => y.id === id); if(!x) return;
+  const mod = x.mod;
+  SB.fb = {id, status:"loading", items:[], improved:null, err:""}; render();
+  try{
+    const sample = await needSample();
+    const prompt = `Bạn là coach phỏng vấn product. Góp ý câu chuyện STAR dưới đây của ứng viên để kể trong phỏng vấn hành vi.
+${profileText()}
+${hasMe() ? "Hồ sơ kinh nghiệm thật của ứng viên (từ LinkedIn):\n\"\"\"\n" + meText() + "\n\"\"\"" : ""}
+Câu chuyện: ${storyText(x)}
+Nhận xét 2 đến 4 điểm cụ thể nhất: thiếu số liệu ở đâu, hành động của "tôi" đã rõ chưa, kết quả và bài học, độ dài khi nói (khoảng 2 phút là vừa), câu chuyện hợp với những câu hỏi nào.
+Rồi viết lại bản gọn và mạnh hơn trong "improved". ${NO_INVENT} Viết bằng tiếng Việt.
+Chỉ trả về JSON: {"feedback":["nhận xét cụ thể"],"improved":{"s":"","t":"","a":"","r":""}}`;
+    const o = await sample.json(prompt, {cache:false});
+    const items = (o && Array.isArray(o.feedback) ? o.feedback : []).map(v => clean(v)).filter(Boolean).slice(0, 5);
+    if(!items.length) throw {code:"invalid_json"};
+    const imp = o.improved && typeof o.improved === "object" ? normStory(Object.assign({title: x.title, tags: x.tags}, o.improved)) : null;
+    if(SB.fb && SB.fb.id === id) SB.fb = {id, status:"done", items, improved: imp && storyReady(imp) && x.mod === mod ? imp : null, err:""};
+  }catch(e){ if(SB.fb && SB.fb.id === id) SB.fb = {id, status:"error", items:[], improved:null, err: aiErrText(e)}; }
+  if(view.name === "stories") render();
+}
+
+/* ================= TỪ PHỎNG VẤN VÀO ÔN TẬP ================= */
+// Biến kết quả một vòng phỏng vấn thành thẻ ghi nhớ (S.customCards) và một câu luyện lại (S.custom, src "iv")
+let IVA = {key:null, status:"idle", err:""};
+function ivAddKey(sessId, i){ return sessId + ":" + i; }
+function ivAddPanel(sessId, i, res){
+  if(!res || res.quiz || !res.transcript || !res.transcript.length) return "";
+  const key = ivAddKey(sessId, i), done = S.ivAdded[key], busy = IVA.key === key && IVA.status === "loading";
+  const r = ROUNDS[res.roundId];
+  if(done) return `<section class="panel stack iv-add" style="--gap:10px"><p><b>Đã thêm vào ôn tập</b>: ${done.cards} thẻ ghi nhớ${done.qid ? " và 1 câu luyện lại" : ""}.</p>
+    <div class="row">${done.cards ? `<button class="btn" data-act="review-ids" data-key="${esc(key)}">Ôn ${done.cards} thẻ này</button>` : ""}${done.qid && findQuestion(done.topic, done.qid) ? `<button class="btn" data-act="open-q" data-topic="${done.topic}" data-q="${done.qid}">Luyện lại câu này</button>` : ""}</div></section>`;
+  return `<section class="panel stack iv-add" style="--gap:10px">
+    <div class="row"><h3>Biến vòng này thành bài ôn</h3></div>
+    <p class="small muted">AI biến ý còn thiếu và điểm cần cải thiện thành thẻ ghi nhớ, và đưa câu hỏi chính của vòng ${esc(r.name)} vào danh sách Luyện trả lời để bạn làm lại.</p>
+    ${IVA.key === key && IVA.err ? `<p class="note err">${esc(IVA.err)}</p>` : ""}
+    <div class="row"><button class="btn primary" data-act="iv-add" data-sess="${esc(sessId)}" data-i="${i}" ${busy || needKey() ? "disabled" : ""}>${busy ? "Đang tạo thẻ…" : "Thêm vào ôn tập"}</button></div>
+  </section>`;
+}
+function sessionById(id){ return IV && IV.id === id ? sessionFromIV() : Store.sessions.find(x => x.id === id); }
+async function ivAdd(sessId, i){
+  const s = sessionById(sessId), res = s && s.results[i]; if(!res) return;
+  const key = ivAddKey(sessId, i), r = ROUNDS[res.roundId], ev = res.eval;
+  IVA = {key, status:"loading", err:""}; render();
+  try{
+    const sample = await needSample();
+    const transcript = res.transcript.map(t => (t.role === "assistant" ? "NGƯỜI PHỎNG VẤN: " : "ỨNG VIÊN: ") + t.content).join("\n\n");
+    const prompt = `Từ kết quả chấm một vòng phỏng vấn thử, hãy tạo tài liệu ôn tập giúp ứng viên lấp đúng lỗ hổng của mình.
+${profileText()}
+Vòng: ${r.name}. Điểm: ${ev.overall}/100.
+Cần cải thiện:
+${ev.improvements.map(x => "- " + x).join("\n") || "- (không có)"}
+Ý còn thiếu:
+${ev.missing.map(x => "- " + x).join("\n") || "- (không có)"}
+Dàn ý tham khảo: ${ev.betterAnswer || "(không có)"}
+Bản ghi (rút gọn):
+${transcript.slice(0, 12000)}
+
+Trả về:
+- "q": câu hỏi chính của vòng, viết lại thành một câu hỏi độc lập (bỏ lời chào, tự giới thiệu).
+- "k": 3 đến 5 ý chính một câu trả lời tốt cho câu hỏi đó.
+- "cards": 2 đến 4 thẻ ghi nhớ, mỗi thẻ là một khái niệm, khung tư duy hoặc kỹ năng cụ thể ứng viên đã thiếu (không phải lời khuyên chung chung như "trả lời rõ ràng hơn"). front là câu hỏi ngắn tối đa 15 chữ; back là đáp án súc tích 1 đến 3 câu, có ví dụ nếu cần. topic chọn từ: ${TOPICS.map(t => t.id).join(", ")}.
+Viết bằng tiếng Việt. Chỉ trả về JSON: {"q":"","k":[""],"cards":[{"topic":"metrics","front":"","back":""}]}`;
+    const o = await sample.json(prompt, {cache:false});
+    const cards = (o && Array.isArray(o.cards) ? o.cards : []).filter(c => c && typeof c === "object")
+      .map(c => ({topic: TOPIC[c.topic] ? c.topic : r.topic, front: clean(c.front), back: clean(c.back)})).filter(c => c.front && c.back).slice(0, 5);
+    const q = clean(o && o.q);
+    if(!cards.length && !q) throw {code:"invalid_json"};
+    const ids = [];
+    for(const c of cards){ const id = "x" + uid(); ids.push(id); (S.customCards[c.topic] = S.customCards[c.topic] || []).push({id, front: c.front, back: c.back, src: "iv", sess: sessId, created: Date.now()}); }
+    let qid = "";
+    if(q){ qid = "c" + uid(); (S.custom[r.topic] = S.custom[r.topic] || []).push({id: qid, q, k: (Array.isArray(o.k) ? o.k : []).map(v => clean(v)).filter(Boolean).slice(0, 6), src: "iv", sess: sessId}); }
+    S.ivAdded[key] = {at: Date.now(), cards: ids.length, ids, topic: r.topic, qid};
+    save(); IVA = {key:null, status:"idle", err:""};
+  }catch(e){ IVA = {key, status:"idle", err: aiErrText(e)}; }
+  if(view.name === "interview" || view.name === "report") render();
+}
+// Câu luyện lại từ phỏng vấn mà chưa làm lại lần nào (hiện ở trang Kiến thức)
+function ivRedoList(){ return TOPICS.flatMap(t => (S.custom[t.id] || []).filter(q => q.src === "iv" && !S.practice[q.id]).map(q => ({topic: t.id, q}))); }
+
 function vLearn(){
-  const p = S.profile, due = dueIds().length, nl = nextLesson();
+  const p = S.profile, due = dueIds().length, nl = nextLesson(), redo = ivRedoList();
   return `<div class="stack" style="--gap:28px">
   <section class="hero">
     <h1>Hôm nay ôn gì?</h1>
@@ -1923,6 +2326,8 @@ function vLearn(){
   <div class="today compact">
     <button class="today-item yellow" data-act="review-due"><span class="big">${due}</span><span>${due ? "thẻ cần ôn hôm nay" : "thẻ đến hạn. Ôn lại toàn bộ cho chắc?"}</span></button>
     ${nl ? `<button class="today-item" data-act="open-lesson" data-id="${nl.id}"><span class="txt"><span class="small muted">Bài học tiếp theo, ${nl.m} phút đọc</span><b class="one">${esc(nl.t)}</b></span></button>` : ""}
+    ${redo.length ? `<button class="today-item" data-act="open-q" data-topic="${redo[0].topic}" data-q="${redo[0].q.id}"><span class="big">${redo.length}</span><span class="txt"><span class="small muted">câu từ phỏng vấn cần luyện lại</span><b class="one">${esc(redo[0].q.q)}</b></span></button>` : ""}
+    <button class="today-item" data-go="stories"><span class="big">${S.stories.length}</span><span class="txt"><span class="small muted">Kho câu chuyện STAR</span><b class="one">${S.stories.length ? `Đã phủ ${Object.values(storyCoverage()).filter(Boolean).length}/${Object.keys(STORY_TAGS).length} nhóm câu hỏi` : "Chuẩn bị cho câu hỏi hành vi"}</b></span></button>
   </div>
   ${gdOn() && !GD.last ? `<div class="panel row"><span class="small">Google Drive đang bật nhưng chưa đồng bộ trong phiên này.</span><span class="spacer"></span><button class="btn" data-act="gd-sync" ${GD.busy ? "disabled" : ""}>Đồng bộ ngay</button></div>` : ""}
   <section class="stack" style="--gap:20px">
@@ -1931,7 +2336,7 @@ function vLearn(){
     const m = mastery(t.id), d = dueIds(t.id).length, done = Object.keys(S.practice).filter(k => questionsOf(t.id).some(q => q.id === k)).length;
     return `<button class="trow" data-act="open-topic" data-topic="${t.id}">
       <span><h3>${esc(t.name)}</h3><span class="small muted">${esc(t.desc)}</span></span>${bar(m)}
-      <span class="meta"><span>${lessonsRead(t.id)}/${lessonsOf(t.id).length} bài đã học</span><span>${learnedCount(t.id)}/${CARDS[t.id].length} thẻ đã nhớ</span><span>${d} thẻ đến hạn</span><span>${done} câu đã luyện</span>${m !== null ? `<span>Điểm ${m}</span>` : ""}</span></button>`;
+      <span class="meta"><span>${lessonsRead(t.id)}/${lessonsOf(t.id).length} bài đã học</span><span>${learnedCount(t.id)}/${cardIds(t.id).length} thẻ đã nhớ</span><span>${d} thẻ đến hạn</span><span>${done} câu đã luyện</span>${m !== null ? `<span>Điểm ${m}</span>` : ""}</span></button>`;
   }).join("")}</div></section></div>`;
 }
 let genState = {topic:null, status:"idle", err:""};
@@ -1944,14 +2349,14 @@ function vTopic(){
   else if(tab === "cards"){
     body = `<div class="panel stack">
       <p>${d ? `Có <b>${d}</b> thẻ đến hạn trong chủ đề này.` : "Bạn đã ôn hết thẻ đến hạn của chủ đề này."}</p>
-      <div class="row">${d ? `<button class="btn primary" data-act="review-topic" data-topic="${t.id}">Ôn ${d} thẻ</button>` : ""}<button class="btn" data-act="review-topic-all" data-topic="${t.id}">Ôn lại toàn bộ ${CARDS[t.id].length} thẻ</button></div>
+      <div class="row">${d ? `<button class="btn primary" data-act="review-topic" data-topic="${t.id}">Ôn ${d} thẻ</button>` : ""}<button class="btn" data-act="review-topic-all" data-topic="${t.id}">Ôn lại toàn bộ ${cardIds(t.id).length} thẻ</button></div>
       </div>
-      <div class="qlist">${CARDS[t.id].map((c, i) => { const r = S.cards[t.id + "-" + i]; return `<div class="qitem" style="cursor:default"><span>${esc(c[0])}</span><span class="score small muted" style="font-family:var(--body);font-weight:400">${!r ? "Mới" : r.i >= 3 ? "Đã nhớ" : "Đang học"}</span></div>`; }).join("")}</div>`;
+      <div class="qlist">${cardIds(t.id).map(id => { const c = cardById(id), r = S.cards[id]; return `<div class="qitem" style="cursor:default"><span>${esc(c.front)} ${c.custom ? `<span class="tag ai">Từ phỏng vấn</span> <button class="linkbtn small muted" data-act="del-card" data-id="${id}">Xóa</button>` : ""}</span><span class="score small muted" style="font-family:var(--body);font-weight:400">${!r ? "Mới" : r.i >= 3 ? "Đã nhớ" : "Đang học"}</span></div>`; }).join("")}</div>`;
   } else if(needKey()){
     body = keyGate("Luyện trả lời dùng AI để chấm câu trả lời của bạn theo tiêu chí. Nhập Gemini API key rồi bấm Lưu để bắt đầu luyện.");
   } else {
     const qs = questionsOf(t.id);
-    body = `<div class="qlist">${qs.map(q => { const pr = S.practice[q.id]; return `<button class="qitem" data-act="open-q" data-topic="${t.id}" data-q="${q.id}"><span>${esc(q.q)} ${q.ai ? `<span class="tag ai">AI tạo</span>` : ""}</span>${pr ? `<span class="score" style="color:${scoreColor(pr.best)}">${pr.best}</span>` : `<span class="score small muted" style="font-family:var(--body);font-weight:400">Chưa làm</span>`}</button>`; }).join("")}</div>
+    body = `<div class="qlist">${qs.map(q => { const pr = S.practice[q.id]; return `<button class="qitem" data-act="open-q" data-topic="${t.id}" data-q="${q.id}"><span>${esc(q.q)} ${q.src === "iv" ? `<span class="tag ai">Từ phỏng vấn</span>` : q.ai ? `<span class="tag ai">AI tạo</span>` : ""}</span>${pr ? `<span class="score" style="color:${scoreColor(pr.best)}">${pr.best}</span>` : `<span class="score small muted" style="font-family:var(--body);font-weight:400">Chưa làm</span>`}</button>`; }).join("")}</div>
       <div class="row"><button class="btn" data-act="gen-q" data-topic="${t.id}" ${genState.status === "loading" ? "disabled" : ""}>${genState.status === "loading" && genState.topic === t.id ? "Đang tạo câu hỏi…" : "Tạo câu hỏi mới bằng AI"}</button>
       <span class="small muted">Câu hỏi bám theo mục tiêu và JD của bạn.</span></div>
       ${genState.err && genState.topic === t.id ? `<p class="note err">${esc(genState.err)}</p>` : ""}`;
@@ -1976,6 +2381,7 @@ function nextIntervals(id){
 }
 function vReview(){
   const backBtn = RV && RV.from === "topic" ? `<button class="btn ghost back" data-act="open-topic" data-topic="${RV.topic}">← ${esc(TOPIC[RV.topic].name)}</button>` : `<button class="btn ghost back" data-go="learn">← Kiến thức</button>`;
+  while(RV && RV.idx < RV.queue.length && !cardById(RV.queue[RV.idx])) RV.idx++;
   if(!RV || RV.idx >= RV.queue.length){
     return `<div class="stack">${backBtn}<div class="deck"><div class="postit" style="cursor:default"><p class="front">Xong ${RV ? RV.done : 0} thẻ.</p><p>Thẻ bạn chưa nhớ sẽ quay lại sau 10 phút, còn lại sẽ hẹn ôn vào những ngày tới.</p></div>
       <div class="row"><button class="btn primary" data-act="quick-practice" data-topic="${RV && RV.topic ? RV.topic : weakestTopic()}">Luyện một câu trả lời</button><button class="btn" data-go="learn">Về Kiến thức</button></div></div></div>`;
@@ -2015,7 +2421,8 @@ async function explainCard(){
   RV.ai = {status:"loading", text:"", err:""}; render();
   try{
     const sample = await needSample();
-    const prompt = `Bạn đang giúp một người ôn phỏng vấn. ${profileText()}\nKhái niệm: ${c.front}\nGiải thích ngắn: ${c.back}\n\nViết bằng tiếng Việt, văn bản thuần (không markdown, không gạch đầu dòng), tối đa 130 chữ, gồm: một ví dụ áp dụng khái niệm này vào một sản phẩm quen thuộc ở Việt Nam, và một câu hỏi phỏng vấn thực tế mà khái niệm này giúp trả lời tốt.`;
+    const mine = c.topic === "behavioral" && hasPersonal();
+    const prompt = `Bạn đang giúp một người ôn phỏng vấn. ${profileText()}\n${mine ? personalCtx() + "\n" : ""}Khái niệm: ${c.front}\nGiải thích ngắn: ${c.back}\n\nViết bằng tiếng Việt, văn bản thuần (không markdown, không gạch đầu dòng), tối đa ${mine ? 150 : 130} chữ, gồm: ${mine ? "một ví dụ áp dụng khái niệm này vào một trải nghiệm thật trong hồ sơ của chính người học ở trên (nêu vai trò, công ty; " + NO_INVENT + ")" : "một ví dụ áp dụng khái niệm này vào một sản phẩm quen thuộc ở Việt Nam"}, và một câu hỏi phỏng vấn thực tế mà khái niệm này giúp trả lời tốt.`;
     await sample(prompt, {modelTier:"quick", onText: ({text}) => { if(RV && RV.idx === myIdx && RV.ai){ RV.ai.text = clean(text); const el = document.getElementById("ai-explain"); if(el){ el.textContent = RV.ai.text; el.classList.remove("thinking"); } } }});
     if(RV && RV.idx === myIdx && RV.ai) RV.ai.status = "done";
   }catch(e){ if(RV && RV.idx === myIdx && RV.ai){ RV.ai.status = "error"; RV.ai.err = aiErrText(e); RV.ai.text = e && e.text ? clean(e.text) : RV.ai.text; } }
@@ -2031,7 +2438,7 @@ function openPractice(topic, qid){
 function vPractice(){
   const q = findQuestion(view.topic, view.qid);
   if(!q || !PR) return `<p>Không tìm thấy câu hỏi.</p>`;
-  const t = TOPIC[view.topic], loading = PR.status === "loading";
+  const t = TOPIC[view.topic], loading = PR.status === "loading", exp = isExpQ(t.id, q.q), hist = (S.practice[q.id] && S.practice[q.id].hist) || [];
   if(needKey()) return `<div class="stack" style="--gap:20px"><button class="btn ghost back" data-act="open-topic" data-topic="${t.id}" data-tab="practice">← ${esc(t.name)}</button>${keyGate("Luyện trả lời dùng AI để chấm câu trả lời của bạn theo tiêu chí. Nhập Gemini API key rồi bấm Lưu để bắt đầu luyện.")}</div>`;
   return `<div class="stack" style="--gap:20px">
     ${q.jdId ? `<button class="btn ghost back" data-go="interview">← Phỏng vấn thử</button><p class="small muted">Câu hỏi từ phân tích JD ${esc((S.jds.find(j => j.id === q.jdId) || {}).name || "")}, được chấm theo JD đó.</p>` : `<button class="btn ghost back" data-act="open-topic" data-topic="${t.id}" data-tab="practice">← ${esc(t.name)}</button>`}
@@ -2041,12 +2448,17 @@ function vPractice(){
       <textarea id="pr-answer" placeholder="Trả lời như đang nói với người phỏng vấn. Nên có cấu trúc: làm rõ, phân tích, đề xuất, đo lường." ${loading ? "disabled" : ""}>${esc(PR.answer)}</textarea>
       ${micNote("pr-answer")}
       <div class="row"><button class="btn primary" data-act="grade" ${loading ? "disabled" : ""}>${loading ? "Đang chấm…" : PR.result ? "Chấm lại" : "Chấm điểm bằng AI"}</button>${loading ? "" : micBtn("pr-answer")}
-      ${q.k.length ? "" : "<!--"}<button class="btn" data-act="toggle-keys" aria-pressed="${PR.showKeys}">${PR.showKeys ? "Ẩn gợi ý" : "Gợi ý"}</button>${q.k.length ? "" : "-->"}</div>
+      ${q.k.length ? "" : "<!--"}<button class="btn" data-act="toggle-keys" aria-pressed="${PR.showKeys}">${PR.showKeys ? "Ẩn gợi ý" : "Gợi ý"}</button>${q.k.length ? "" : "-->"}
+      ${exp && hasPersonal() && (!PR.me || PR.me.status === "error") ? `<button class="btn" data-act="pr-me">Gợi ý từ kinh nghiệm của bạn</button>` : ""}</div>
+      ${hist.length && !PR.result ? `<p class="small muted">Bạn đã trả lời câu này ${hist.length} lần, điểm gần nhất ${hist[hist.length - 1].s}. Lần chấm tới sẽ được so sánh với lần đó.</p>` : ""}
+      ${exp && !hasPersonal() ? `<p class="small muted">Thêm hồ sơ LinkedIn hoặc CV ở <button class="linkbtn" data-go="settings">Cài đặt</button>, hoặc chuẩn bị <button class="linkbtn" data-go="stories">Kho câu chuyện</button>, để nhận gợi ý dựa trên kinh nghiệm thật của bạn.</p>` : ""}
     </div>
     ${PR.showKeys && q.k.length ? `<div class="outline"><p class="small muted" style="margin-bottom:6px">Câu trả lời tốt thường có</p><ul class="list">${q.k.map(k => `<li>${esc(k)}</li>`).join("")}</ul></div>` : ""}
+    ${PR.me ? `<div class="outline me-hint"><p class="small muted" style="margin-bottom:6px">Gợi ý từ kinh nghiệm của bạn</p>${PR.me.status === "done" ? outlineHtml(PR.me.text) : `<p class="prewrap ${PR.me.text ? "" : "thinking"}" id="pr-me-text">${esc(PR.me.text || (PR.me.status === "loading" ? "AI đang đọc hồ sơ của bạn…" : ""))}</p>`}${PR.me.err ? `<p class="note err">${esc(PR.me.err)}</p>` : ""}</div>` : ""}
     ${loading ? `<p class="thinking">AI đang đọc và chấm theo ${RUBRICS[t.id].length} tiêu chí. Thường mất 15 đến 40 giây.</p>` : ""}
     ${PR.err ? `<p class="note err">${esc(PR.err)}</p>` : ""}
-    ${PR.result ? `<section class="stack">${renderEval(PR.result, {practice:true})}</section>` : ""}
+    ${PR.result ? `<section class="stack">${PR.prev ? compareHtml(PR.prev, PR.result, PR.answer, PR.progress) : ""}${renderEval(PR.result, {practice:true})}
+      <div class="row"><button class="btn" data-act="pr-retry">Trả lời lại từ đầu</button><span class="small muted">Lần chấm sau sẽ so sánh với lần này.</span></div></section>` : ""}
   </div>`;
 }
 async function grade(){
@@ -2054,6 +2466,9 @@ async function grade(){
   const answer = PR.answer.trim();
   stopMic();
   if(answer.length < 20){ PR.err = "Câu trả lời quá ngắn để chấm. Viết ít nhất vài câu."; render(); return; }
+  const histNow = (S.practice[q.id] && S.practice[q.id].hist) || [], prev = histNow[histNow.length - 1] || null;
+  const cmp = prev && prev.a && prev.a.trim() !== answer.slice(0, HIST_CHARS).trim() ? prev : null;
+  const personal = isExpQ(t.id, q.q) && hasPersonal() ? personalCtx() : "";
   PR.status = "loading"; PR.err = ""; render();
   try{
     const sample = await needSample();
@@ -2068,15 +2483,54 @@ Câu trả lời của ứng viên:
 ${answer.slice(0, 12000)}
 """
 Chấm nghiêm túc như phỏng vấn thật, không nương tay. overall là điểm 0-100. Nhận xét cụ thể, dẫn chứng từ chính câu trả lời. Viết bằng tiếng Việt. weakTopics để mảng rỗng.
-Chỉ trả về một đối tượng JSON theo đúng dạng:
+${personal ? personal + "\nĐây là câu hỏi về kinh nghiệm: betterAnswer là dàn ý dựa trên trải nghiệm thật phù hợp nhất trong hồ sơ hoặc kho câu chuyện ở trên (nêu rõ dùng trải nghiệm nào). Nếu ứng viên bỏ qua một trải nghiệm phù hợp hơn có trong hồ sơ, nêu trong improvements. " + NO_INVENT + "\n" : ""}${cmp ? `Lần trước ứng viên trả lời câu này được ${cmp.s}/100:\n"""\n${cmp.a}\n"""\nThêm khóa "progress" vào JSON: 1 đến 2 câu so sánh cụ thể lần này với lần trước (tiến bộ ở đâu, lỗi nào còn lặp lại). Vẫn chấm lần này độc lập theo tiêu chí.\n` : ""}Chỉ trả về một đối tượng JSON theo đúng dạng:
 ${JSON_SHAPE}`;
-    const res = normEval(await sample.json(prompt, {cache:false}));
-    PR.result = res; PR.status = "done";
-    const prev = S.practice[q.id];
-    S.practice[q.id] = {best: Math.max(prev ? prev.best : 0, res.overall), last: Date.now()};
+    const raw = await sample.json(prompt, {cache:false});
+    const res = normEval(raw);
+    PR.result = res; PR.status = "done"; PR.prev = cmp; PR.progress = cmp && raw ? clean(raw.progress) : "";
+    const old = S.practice[q.id];
+    const entry = {d: Date.now(), s: res.overall, a: answer.slice(0, HIST_CHARS), c: res.scores.map(x => [x.criterion, x.score])};
+    S.practice[q.id] = {best: Math.max(old ? old.best : 0, res.overall), last: Date.now(), hist: histNow.concat([entry]).slice(-HIST_MAX)};
     S.scores.push({t: t.id, s: res.overall, d: Date.now(), src: "practice"});
     save();
   }catch(e){ PR.status = "idle"; PR.err = aiErrText(e); }
+  if(view.name === "practice") render();
+}
+const HIST_CHARS = 3000;
+// So sánh lần trả lời này với lần trước: điểm chung, điểm từng tiêu chí (khớp theo tên), nhận xét tiến bộ và hai câu trả lời cạnh nhau
+function compareHtml(prev, res, answer, progress){
+  const dl = res.overall - prev.s, pm = new Map((prev.c || []).map(([n, v]) => [n, v]));
+  const delta = d => `<span class="delta ${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? "+" : ""}${d}</span>`;
+  const rows = res.scores.filter(x => pm.has(x.criterion)).map(x => `<div class="cmp-row"><span>${esc(x.criterion)}</span><span class="muted">${pm.get(x.criterion)}</span><span>→</span><b>${x.score}</b>${delta(x.score - pm.get(x.criterion))}</div>`).join("");
+  return `<section class="panel stack cmp" style="--gap:12px"><h3>So với lần trước</h3>
+    <div class="cmp-head"><span class="muted">Lần trước <b>${prev.s}</b></span><span>→</span><span>Lần này <b>${res.overall}</b></span>${delta(dl)}</div>
+    ${progress ? `<p>${esc(progress)}</p>` : ""}
+    ${rows ? `<div class="cmp-rows">${rows}</div>` : ""}
+    <details><summary style="cursor:pointer">Xem hai câu trả lời cạnh nhau</summary><div class="grid2 cmp-ans"><div><p class="small muted">Lần trước, ${fmtDate(prev.d)}</p><div class="prewrap">${esc(prev.a)}</div></div><div><p class="small muted">Lần này</p><div class="prewrap">${esc(answer)}</div></div></div></details>
+  </section>`;
+}
+async function personalHint(){
+  const q = findQuestion(PR.topic, PR.qid), my = PR; if(!q) return;
+  const gp = q.jdId ? jdProfile(q.jdId) : learnProfile();
+  PR.me = {status:"loading", text:"", err:""}; render();
+  try{
+    const sample = await needSample();
+    const prompt = `Bạn là mentor phỏng vấn product, giúp ứng viên trả lời câu hỏi về kinh nghiệm bằng chính trải nghiệm của họ.
+${profileText(gp)}
+${personalCtx()}
+Câu hỏi: ${q.q}
+Gợi ý cách trả lời dựa trên kinh nghiệm thật ở trên:
+- Dòng đầu "Nên kể: ..." chọn 1 trải nghiệm hoặc câu chuyện phù hợp nhất (nêu vai trò, công ty) và vì sao hợp với câu hỏi.
+- 4 dòng tiếp theo là dàn ý STAR bằng chi tiết lấy từ hồ sơ, mỗi dòng bắt đầu bằng "Bối cảnh:", "Nhiệm vụ:", "Hành động:", "Kết quả:".
+- Dòng cuối "Cần bổ sung: ..." nêu số liệu hoặc chi tiết hồ sơ chưa có mà ứng viên nên tự điền.
+${NO_INVENT} Nếu hồ sơ không có trải nghiệm thật sự phù hợp, nói thẳng ở dòng đầu và chọn trải nghiệm gần nhất có thể dùng.
+Mỗi ý một dòng, bắt đầu bằng "- ", văn bản thuần, tối đa 170 chữ, viết bằng tiếng Việt. Không viết sẵn câu trả lời hoàn chỉnh.`;
+    await sample(prompt, {modelTier:"quick", cache:false, onText: ({text}) => {
+      if(PR !== my || !PR.me) return;
+      PR.me.text = clean(text); const el = document.getElementById("pr-me-text"); if(el){ el.textContent = PR.me.text; el.classList.remove("thinking"); }
+    }});
+    if(PR === my && PR.me) PR.me.status = "done";
+  }catch(e){ if(PR === my && PR.me){ PR.me.status = "error"; PR.me.err = aiErrText(e); } }
   if(view.name === "practice") render();
 }
 async function genQuestion(topic){
@@ -2484,7 +2938,7 @@ function vSetup(){
 function startInterview(){
   const p = S.profile;
   const rounds = SU.mode === "single" ? [SU.single] : ROUND_ORDER.filter(r => SU.loop.includes(r));
-  IV = {id: uid(), createdAt: Date.now(), mode: SU.mode, rounds, idx: 0, profile: clone(effectiveProfile()), followups: p.followups, lang: p.lang, style: p.style, results: [], turns: [], answers: 0, status: "asking", stream: "", err: "", ctl: null, draft: "", qStart: 0};
+  IV = {id: uid(), createdAt: Date.now(), mode: SU.mode, rounds, idx: 0, profile: clone(effectiveProfile()), followups: p.followups, lang: p.lang, style: p.style, results: [], turns: [], answers: 0, status: "asking", stream: "", err: "", ctl: null, draft: "", qStart: 0, me: hasPersonal() ? personalCtx() : ""};
   go("interview");
   startRound();
 }
@@ -2497,6 +2951,7 @@ ${profileText(IV.profile)}
 ${IV.profile.jd ? "Bám sát JD: ưu tiên hỏi về sản phẩm, ngành, trách nhiệm và kỹ năng nêu trong JD; nếu JD có tên công ty thì đóng vai người của chính công ty đó." : ""}
 Phong cách của bạn: ${STYLES[IV.style]}.
 Mục tiêu vòng này: ${r.brief}
+${IV.me && r.topic === "behavioral" ? "Bạn đã đọc hồ sơ ứng viên trước buổi phỏng vấn:\n" + IV.me + "\nHỏi vào các trải nghiệm cụ thể trong hồ sơ như người phỏng vấn thật đã đọc CV (ví dụ: \"Tôi thấy bạn từng ... ở ..., kể thêm về ...\"), và hỏi vặn để kiểm tra vai trò thật của ứng viên, quyết định của chính họ và số liệu. Không bịa thêm chi tiết về hồ sơ.\n" : ""}
 Một vài đề tham khảo (được chọn, biến tấu, hoặc tự ra đề khác phù hợp hơn với JD, loại công ty và thị trường; ưu tiên bối cảnh quen thuộc ở ${marketPlace(IV.profile.market)}):
 ${questionsOf(r.topic).map(q => "- " + q.q).join("\n")}
 Quy tắc:
@@ -2539,11 +2994,11 @@ async function askHint(){
   IV.hint = {turn, status:"loading", text:"", err:""}; IV.hintsRound = (IV.hintsRound || 0) + 1; render(); scrollBottom();
   try{
     const sample = await needSample();
-    const r = curRound();
+    const r = curRound(), personal = IV.me && (r.topic === "behavioral" || isExpQ("", q.content)) ? IV.me : "";
     const prompt = `Bạn là mentor đang ngồi cạnh một ứng viên trong buổi phỏng vấn thử vòng "${r.name}".
 ${profileText(IV.profile)}
 Câu người phỏng vấn vừa hỏi: "${q.content}"
-Đưa 3 đến 4 gợi ý ngắn về HƯỚNG trả lời: nên làm rõ gì, khung nào phù hợp, ý quan trọng nào không được quên. Không viết sẵn câu trả lời. Mỗi gợi ý một dòng, bắt đầu bằng "- ", tối đa 90 chữ tổng cộng, văn bản thuần, viết bằng tiếng Việt.`;
+${personal ? personal + "\nĐây là câu hỏi về kinh nghiệm: gợi ý đầu tiên nêu trải nghiệm hoặc câu chuyện cụ thể nào trong hồ sơ nên kể (vai trò, công ty) và vì sao hợp. " + NO_INVENT + "\n" : ""}Đưa 3 đến 4 gợi ý ngắn về HƯỚNG trả lời: nên làm rõ gì, khung nào phù hợp, ý quan trọng nào không được quên. Không viết sẵn câu trả lời. Mỗi gợi ý một dòng, bắt đầu bằng "- ", tối đa ${personal ? 120 : 90} chữ tổng cộng, văn bản thuần, viết bằng tiếng Việt.`;
     await sample(prompt, {modelTier:"quick", cache:false, onText: ({text}) => {
       if(IV !== me || !IV.hint || IV.hint.turn !== turn) return;
       IV.hint.text = clean(text); const el = document.getElementById("hint-text"); if(el){ el.textContent = IV.hint.text; el.classList.remove("thinking"); }
@@ -2577,7 +3032,7 @@ async function evaluateRound(){
 ${profileText(IV.profile)}
 Tiêu chí, mỗi tiêu chí 1 đến 5 điểm, 3 nghĩa là đạt kỳ vọng của cấp ${LEVELS[IV.profile.level]}:
 ${RUBRICS[r.rubric].map(k => "- " + k).join("\n")}
-Chỉ chấm dựa trên những gì ứng viên thực sự nói. Câu trả lời quá ngắn, chung chung hoặc lạc đề thì điểm thấp. Nghiêm khắc như phỏng vấn thật. overall là điểm 0-100 (từ 70 là đạt, 55-69 là cân nhắc, dưới 55 là trượt). Nhận xét dẫn chứng từ chính câu trả lời. betterAnswer là dàn ý trả lời tốt hơn cho câu hỏi chính. weakTopics chọn từ: ${TOPICS.map(t => t.id).join(", ")}. Viết bằng tiếng Việt kể cả khi buổi phỏng vấn dùng tiếng Anh${IV.lang === "en" ? "; thêm vào improvements một nhận xét ngắn về cách diễn đạt tiếng Anh" : ""}.
+Chỉ chấm dựa trên những gì ứng viên thực sự nói. Câu trả lời quá ngắn, chung chung hoặc lạc đề thì điểm thấp. Nghiêm khắc như phỏng vấn thật. overall là điểm 0-100 (từ 70 là đạt, 55-69 là cân nhắc, dưới 55 là trượt). Nhận xét dẫn chứng từ chính câu trả lời. betterAnswer là dàn ý trả lời tốt hơn cho câu hỏi chính${IV.me && r.topic === "behavioral" ? ", dựa trên trải nghiệm thật phù hợp nhất trong hồ sơ ứng viên dưới đây. " + NO_INVENT + "\n" + IV.me + "\n" : "."} weakTopics chọn từ: ${TOPICS.map(t => t.id).join(", ")}. Viết bằng tiếng Việt kể cả khi buổi phỏng vấn dùng tiếng Anh${IV.lang === "en" ? "; thêm vào improvements một nhận xét ngắn về cách diễn đạt tiếng Anh" : ""}.
 ${IV.hintsRound ? `Lưu ý: ứng viên đã bấm xem gợi ý hướng trả lời từ AI ${IV.hintsRound} lần trong vòng này; khi chấm tiêu chí về cấu trúc và tư duy, cân nhắc điều đó và nêu trong improvements.\n` : ""}Bản ghi buổi phỏng vấn:
 ${transcript.slice(0, 40000)}
 
@@ -2613,6 +3068,7 @@ function vRoom(){
       <h2>Kết quả vòng ${esc(r.name)}</h2>
       ${res.hints ? `<p class="small muted">Bạn đã xem gợi ý ${res.hints} lần trong vòng này.</p>` : ""}
       ${renderEval(res.eval)}
+      ${ivAddPanel(IV.id, IV.results.length - 1, res)}
       <details class="panel"><summary style="cursor:pointer">${res.quiz ? "Xem lại từng câu" : "Xem lại bản ghi"}</summary>${res.quiz ? `<div style="margin-top:12px">${quizReview(res.quiz)}</div>` : `<div class="chat" style="margin-top:12px">${chatHtml(res.transcript, r)}</div>`}</details>
       ${!last && failed ? `<p class="note">Trong quy trình thật, bạn sẽ dừng ở vòng này. Bạn có thể kết thúc hoặc vẫn luyện tiếp vòng sau.</p>` : ""}
       <div class="row">${last ? `<button class="btn primary" data-act="iv-finish">${IV.rounds.length > 1 ? "Xem tổng kết" : "Hoàn tất"}</button>`
@@ -2683,7 +3139,7 @@ function vReport(){
   return `<div class="stack" style="--gap:20px">
     <button class="btn ghost back" data-go="interview">← Phỏng vấn thử</button>
     ${sessionSummary(s, true)}
-    ${s.results.map(res => { const r = ROUNDS[res.roundId], single = s.rounds.length === 1; return `<section class="stack" style="--gap:14px${single ? "" : ";padding-top:16px;border-top:1px solid var(--line)"}">${single ? "" : `<h2>${esc(r.name)}</h2>`}${res.hints ? `<p class="small muted">Bạn đã xem gợi ý ${res.hints} lần trong vòng này.</p>` : ""}${renderEval(res.eval, {noTopics: !single})}<details class="panel"><summary style="cursor:pointer">${res.quiz ? "Xem lại từng câu" : "Xem lại bản ghi"}</summary>${res.quiz ? `<div style="margin-top:12px">${quizReview(res.quiz)}</div>` : `<div class="chat" style="margin-top:12px">${chatHtml(res.transcript, r)}</div>`}</details></section>`; }).join("")}
+    ${s.results.map((res, ri) => { const r = ROUNDS[res.roundId], single = s.rounds.length === 1; return `<section class="stack" style="--gap:14px${single ? "" : ";padding-top:16px;border-top:1px solid var(--line)"}">${single ? "" : `<h2>${esc(r.name)}</h2>`}${res.hints ? `<p class="small muted">Bạn đã xem gợi ý ${res.hints} lần trong vòng này.</p>` : ""}${renderEval(res.eval, {noTopics: !single})}${ivAddPanel(s.id, ri, res)}<details class="panel"><summary style="cursor:pointer">${res.quiz ? "Xem lại từng câu" : "Xem lại bản ghi"}</summary>${res.quiz ? `<div style="margin-top:12px">${quizReview(res.quiz)}</div>` : `<div class="chat" style="margin-top:12px">${chatHtml(res.transcript, r)}</div>`}</details></section>`; }).join("")}
   </div>`;
 }
 
@@ -2713,6 +3169,29 @@ document.addEventListener("click", e => {
     case "open-q": openPractice(d.topic, d.q); break;
     case "gen-q": genQuestion(d.topic); break;
     case "grade": grade(); break;
+    case "pr-me": personalHint(); break;
+    case "pr-retry": stopMic(); Object.assign(PR, {answer:"", result:null, prev:null, progress:"", err:"", me:null, start:Date.now()}); render(); { const ta = document.getElementById("pr-answer"); if(ta){ ta.focus(); ta.scrollIntoView({block:"center"}); } } break;
+    case "me-save": meSave(); break;
+    case "me-edit": ME.editing = true; ME.err = ""; render(); { const ta = document.getElementById("me-raw"); if(ta) ta.focus(); } break;
+    case "me-cancel": ME.editing = false; ME.err = ""; render(); break;
+    case "me-analyze": analyzeMe(); break;
+    case "me-del": if(!arm(a, "Bấm lần nữa để xóa hồ sơ")) break; S.me = {raw:"", sum:null, at: Date.now()}; ME = {editing:false, status:"idle", err:""}; save(); render(); break;
+    case "sb-new": case "sb-edit": SB.editing = d.id || "new"; SB.err = ""; render(); { const el = document.getElementById("sb-title"); if(el){ el.focus(); el.scrollIntoView({block:"center"}); } } break;
+    case "sb-cancel": SB.editing = null; SB.err = ""; render(); break;
+    case "sb-save": storySave(d.id); break;
+    case "sb-del": if(!arm(a, "Bấm lần nữa để xóa")) break; S.storiesDel[d.id] = Date.now(); S.stories = S.stories.filter(x => x.id !== d.id); if(SB.editing === d.id) SB.editing = null; save(); render(); break;
+    case "sb-fb": storyFeedback(d.id); break;
+    case "sb-apply": { const x = S.stories.find(y => y.id === d.id), imp = SB.fb && SB.fb.id === d.id && SB.fb.improved; if(x && imp){ Object.assign(x, {s: imp.s, t: imp.t, a: imp.a, r: imp.r, mod: Date.now()}); SB.fb = null; save(); } render(); break; }
+    case "sb-draft": draftStories(); break;
+    case "sb-keep": { const x = SB.drafts[+d.i]; if(x){ const now = Date.now(); S.stories.push(Object.assign({id: "st" + uid(), created: now, mod: now, src: "me"}, x)); SB.drafts.splice(+d.i, 1); save(); } render(); break; }
+    case "sb-drop": SB.drafts.splice(+d.i, 1); render(); break;
+    case "iv-add": ivAdd(d.sess, +d.i); break;
+    case "review-ids": { const r = S.ivAdded[d.key], ids = (r && r.ids || []).filter(id => cardById(id)); if(ids.length) startReview(ids, "learn"); break; }
+    case "del-card": {
+      if(!arm(a, "Bấm lần nữa để xóa")) break;
+      for(const t of Object.keys(S.customCards)) S.customCards[t] = S.customCards[t].filter(x => x.id !== d.id);
+      delete S.cards[d.id]; save(); render(); break;
+    }
     case "toggle-keys": PR.showKeys = !PR.showKeys; render(); break;
     case "edit-profile": editingProfile = true; render(); break;
     case "cancel-profile": editingProfile = false; render(); break;
@@ -2806,12 +3285,13 @@ document.addEventListener("click", e => {
     case "gd-off": if(!arm(a, "Bấm lần nữa để tắt đồng bộ")) break; try{ if(GD.token && window.google && google.accounts) google.accounts.oauth2.revoke(GD.token, () => {}); localStorage.removeItem(GD_CID_LS); localStorage.removeItem(GD_ON_LS); }catch(e){} Object.assign(GD, {token:null, exp:0, fileId:null, err:"", last:0}); render(); break;
     case "reset":
       if(!arm(a, "Bấm lần nữa để xóa vĩnh viễn")) break;
-      { const prof = S.profile, jds = S.jds; const settings = S.settings; S = defaultState(); S.profile = prof; S.jds = jds; S.settings = settings; S._resetAt = Date.now(); save();
+      { const keep = {profile: S.profile, jds: S.jds, settings: S.settings, me: S.me, stories: S.stories, storiesDel: S.storiesDel}; S = Object.assign(defaultState(), keep); S._resetAt = Date.now(); save();
         if(Store.db) Store.sessions.forEach(s => sessCol().doc(s.id).delete().catch(()=>{}));
         Store.sessions = []; lsSet(LS_SESS, []); render(); }
       break;
   }
 });
+document.addEventListener("change", e => { if(e.target && e.target.id === "me-file") meUpload(e.target); });
 document.addEventListener("input", e => {
   if(e.target.id === "pr-answer" && PR){ PR.answer = e.target.value; persistLive(); }
   if(e.target.id === "iv-answer" && IV){ IV.draft = e.target.value; persistLive(); }
@@ -3974,7 +4454,106 @@ Object.assign(I18N_DICT, {
   "Trang đã tải lại khi người phỏng vấn đang hỏi. Bấm Hỏi lại để tiếp tục.":"The page reloaded while the interviewer was asking. Click Ask again to continue.",
   "Trang đã tải lại khi đang chấm điểm. Bấm Chấm lại để tiếp tục.":"The page reloaded during grading. Click Grade again to continue."
 });
+// Hồ sơ kinh nghiệm, kho câu chuyện, ôn tập từ phỏng vấn, so sánh câu trả lời
+Object.assign(I18N_DICT, {
+  "Kinh nghiệm của bạn (LinkedIn, CV)":"Your experience (LinkedIn, CV)",
+  "Dán hồ sơ LinkedIn hoặc tải CV lên để gợi ý, dàn ý tham khảo và ví dụ cho câu hỏi về kinh nghiệm dựa trên chính trải nghiệm của bạn, thay vì ví dụ chung chung.":"Paste your LinkedIn profile or upload your CV so hints, sample outlines and examples for experience questions draw on your own background instead of generic examples.",
+  "Tải CV lên (PDF, DOCX, TXT)":"Upload CV (PDF, DOCX, TXT)",
+  "File được đọc ngay trên máy bạn, không tải lên đâu cả.":"The file is read on your device and isn't uploaded anywhere.",
+  "Nội dung hồ sơ":"Profile content",
+  "Dán nội dung hồ sơ LinkedIn hoặc CV: tiêu đề, giới thiệu, kinh nghiệm, học vấn":"Paste your LinkedIn profile or CV: headline, about, experience, education",
+  "Dán hồ sơ LinkedIn hoặc tải CV lên trước khi lưu.":"Paste your LinkedIn profile or upload a CV before saving.",
+  "LinkedIn không cho app đọc hồ sơ từ đường link. Mở trang hồ sơ, chép nội dung theo hướng dẫn rồi dán vào đây.":"LinkedIn doesn't let apps read a profile from its link. Open your profile, copy the content as described in the guide, and paste it here.",
+  "Nội dung quá ngắn. Hãy dán ít nhất phần Kinh nghiệm trong hồ sơ.":"That's too short. Paste at least the Experience section of your profile.",
+  "AI không tìm thấy kinh nghiệm làm việc trong nội dung đã dán. Kiểm tra lại nội dung rồi bấm Sửa.":"AI couldn't find any work experience in what you pasted. Check the content, then click Edit.",
+  "Lưu và phân tích":"Save and analyze",
+  "Hồ sơ được lưu cùng tiến độ và chỉ gửi cho AI khi bạn dùng gợi ý, chấm điểm, ôn thẻ hoặc phỏng vấn thử.":"Your profile is saved with your progress and is only sent to AI when you use hints, grading, card review or mock interviews.",
+  "AI đang đọc hồ sơ của bạn. Thường mất 10 đến 30 giây.":"AI is reading your profile. This usually takes 10 to 30 seconds.",
+  "Phân tích hồ sơ":"Analyze profile",
+  "Được dùng cho gợi ý và dàn ý tham khảo khi luyện trả lời câu hỏi về kinh nghiệm, người phỏng vấn ở vòng HR và Hành vi, ví dụ khi ôn thẻ chủ đề Hành vi, và nháp trong":"Used for hints and sample outlines when practicing experience questions, the interviewer in HR and Behavioral rounds, examples when reviewing Behavioral cards, and drafts in the",
+  "Bấm lần nữa để xóa hồ sơ":"Click again to delete the profile",
+  "File lớn hơn 10 MB. Hãy chọn file nhỏ hơn.":"The file is larger than 10 MB. Choose a smaller file.",
+  "Chỉ đọc được file PDF, DOCX hoặc TXT. File .doc cũ hãy lưu lại thành .docx hoặc PDF.":"Only PDF, DOCX or TXT files can be read. Save old .doc files as .docx or PDF first.",
+  "Không đọc được chữ trong file. CV dạng ảnh scan thì hãy chép nội dung và dán vào ô bên dưới.":"No text could be read from the file. For a scanned CV, copy its content and paste it below.",
+  "Không tải được công cụ đọc file (cần mạng). Hãy chép nội dung CV và dán vào ô bên dưới.":"Couldn't load the file reader (needs internet). Copy your CV content and paste it below.",
+  "Không đọc được file này. Hãy chép nội dung CV và dán vào ô bên dưới.":"Couldn't read this file. Copy your CV content and paste it below.",
+  "Kho câu chuyện":"Story bank",
+  "Chuẩn bị 6 đến 8 câu chuyện thật theo STAR và dùng lại cho nhiều câu hỏi hành vi. Gợi ý, chấm điểm và người phỏng vấn thử sẽ dựa vào các câu chuyện này.":"Prepare 6 to 8 real STAR stories and reuse them across behavioral questions. Hints, grading and the mock interviewer will draw on these stories.",
+  "Độ phủ":"Coverage",
+  "Thành công":"Success",
+  "Thất bại":"Failure",
+  "Xung đột, bất đồng":"Conflict, disagreement",
+  "Thuyết phục, ảnh hưởng":"Persuasion, influence",
+  "Quyết định khi thiếu dữ liệu":"Deciding with limited data",
+  "Dẫn dắt, phát triển người khác":"Leading, developing others",
+  "Thấu hiểu khách hàng":"Understanding customers",
+  "Thêm câu chuyện":"Add a story",
+  "Sửa câu chuyện":"Edit story",
+  "Tạo nháp từ LinkedIn":"Draft from LinkedIn",
+  "AI đang viết nháp…":"AI is drafting…",
+  "Thêm hồ sơ LinkedIn ở":"Add your LinkedIn profile in",
+  "để AI viết nháp câu chuyện từ kinh nghiệm thật của bạn.":"so AI can draft stories from your real experience.",
+  "AI đang đọc hồ sơ và viết nháp câu chuyện. Thường mất 20 đến 40 giây.":"AI is reading your profile and drafting stories. This usually takes 20 to 40 seconds.",
+  "Nháp từ hồ sơ LinkedIn":"Drafts from your LinkedIn profile",
+  "Đọc lại, sửa cho đúng sự thật và điền các chỗ trong ngoặc vuông trước khi dùng.":"Read them, correct anything that isn't accurate, and fill in the square brackets before using them.",
+  "Lưu vào kho":"Save to bank",
+  "Bỏ":"Discard",
+  "Chưa có câu chuyện nào.":"No stories yet.",
+  "Ví dụ: Cứu tỉ lệ thanh toán ví khi đối tác đổi API":"E.g. Rescuing wallet payment success when a partner changed its API",
+  "Dùng cho nhóm câu hỏi (tối đa 3)":"Use for question types (up to 3)",
+  "Bối cảnh (Situation)":"Situation",
+  "Nhiệm vụ (Task)":"Task",
+  "Hành động (Action)":"Action",
+  "Kết quả (Result)":"Result",
+  "Bối cảnh":"Situation",
+  "Nhiệm vụ":"Task",
+  "Hành động":"Action",
+  "Kết quả":"Result",
+  "Ở đâu, khi nào, vấn đề là gì, quy mô ra sao":"Where, when, what the problem was, how big",
+  "Bạn chịu trách nhiệm gì, mục tiêu cụ thể":"What you were responsible for, the specific goal",
+  "Bạn đã làm gì, theo thứ tự, vì sao chọn cách đó. Phần dài nhất":"What you did, in order, and why you chose that approach. The longest part",
+  "Số liệu thay đổi, tác động, bài học rút ra":"How the numbers moved, the impact, what you learned",
+  "Đặt tên và viết ít nhất một phần của câu chuyện trước khi lưu.":"Give the story a name and write at least one part before saving.",
+  "Nháp từ LinkedIn":"Drafted from LinkedIn",
+  "AI góp ý":"AI feedback",
+  "AI đang đọc câu chuyện…":"AI is reading the story…",
+  "Dùng bản AI đã gọt":"Use AI's polished version",
+  "Bạn vẫn sửa lại được sau đó.":"You can still edit it afterwards.",
+  "AI góp ý theo STAR":"AI STAR feedback",
+  "Đã thêm vào ôn tập":"Added to review",
+  "Luyện lại câu này":"Practice this question again",
+  "Biến vòng này thành bài ôn":"Turn this round into review",
+  "Đang tạo thẻ…":"Creating cards…",
+  "Thêm vào ôn tập":"Add to review",
+  "Từ phỏng vấn":"From interview",
+  "câu từ phỏng vấn cần luyện lại":"interview questions to redo",
+  "Kho câu chuyện STAR":"STAR story bank",
+  "Chuẩn bị cho câu hỏi hành vi":"Prepare for behavioral questions",
+  "Gợi ý từ kinh nghiệm của bạn":"Hint from your experience",
+  "Thêm hồ sơ LinkedIn hoặc CV ở":"Add your LinkedIn profile or CV in",
+  ", hoặc chuẩn bị":", or build your",
+  ", để nhận gợi ý dựa trên kinh nghiệm thật của bạn.":", to get hints based on your real experience.",
+  "AI đang đọc hồ sơ của bạn…":"AI is reading your profile…",
+  "Trả lời lại từ đầu":"Answer again from scratch",
+  "Lần chấm sau sẽ so sánh với lần này.":"The next grading will compare against this one.",
+  "So với lần trước":"Compared with last time",
+  "Lần trước":"Last time",
+  "Lần này":"This time",
+  "Xem hai câu trả lời cạnh nhau":"See both answers side by side"
+});
 const I18N_PATTERNS = [
+  [/^Đã lưu nội dung hồ sơ \((\d+) ký tự\)\.(.*)$/, (m, a, b) => `Profile content saved (${a} characters).${b.includes("Gemini") ? " Add a Gemini API key so AI can summarize it; until then AI uses the text exactly as pasted." : ""}`],
+  [/^Đang đọc (.+)…$/, (m, a) => `Reading ${a}…`],
+  [/^Đã thêm nội dung từ (.+)\. Kiểm tra lại rồi bấm Lưu\.$/, (m, a) => `Added the content of ${a}. Check it, then click Save.`],
+  [/^Đã phủ (\d+)\/(\d+) nhóm câu hỏi hay gặp$/, (m, a, b) => `Covers ${a}/${b} common question types`],
+  [/^Đã phủ (\d+)\/(\d+) nhóm câu hỏi$/, (m, a, b) => `Covers ${a}/${b} question types`],
+  [/^(.+) · (\d+)$/, (m, a, b) => `${tr(a)} · ${b}`],
+  [/^Câu chuyện của bạn \((\d+)\)$/, (m, a) => `Your stories (${a})`],
+  [/^: (\d+) thẻ ghi nhớ( và 1 câu luyện lại)?\.$/, (m, a, b) => `: ${a} flashcard${a === "1" ? "" : "s"}${b ? " and 1 question to redo" : ""}.`],
+  [/^Ôn (\d+) thẻ này$/, (m, a) => `Review these ${a} cards`],
+  [/^AI biến ý còn thiếu và điểm cần cải thiện thành thẻ ghi nhớ, và đưa câu hỏi chính của vòng (.+) vào danh sách Luyện trả lời để bạn làm lại\.$/, (m, a) => `AI turns the missing points and areas to improve into flashcards, and adds the main question of the ${a} round to Practice so you can redo it.`],
+  [/^Bạn đã trả lời câu này (\d+) lần, điểm gần nhất (\d+)\. Lần chấm tới sẽ được so sánh với lần đó\.$/, (m, a, b) => `You've answered this ${a} time${a === "1" ? "" : "s"}, latest score ${b}. The next grading will be compared with it.`],
+  [/^Lần trước, (.+)$/, (m, a) => `Last time, ${a}`],
   [/^Bài (\d+)\/(\d+), (\d+) phút đọc$/, (m, a, b, c) => `Lesson ${a}/${b}, ${c} min read`],
   [/^Đang ôn cho vị trí (.+)\.$/, (m, a) => `Preparing for ${a}.`],
   [/^(.+), (\d+) phút đọc, đã học$/, (m, a, n) => `${a}, ${n} min read, done`],
@@ -4040,6 +4619,10 @@ view = resolveView(parseRoute(location.hash)); syncUrl(true);
 render();
 initStore();
 getSample();
+// Cài app và dùng offline: chỉ đăng ký service worker khi chạy qua http(s), không chạy trong Claude hay trong iframe
+if("serviceWorker" in navigator && /^https?:$/.test(location.protocol) && !IN_CLAUDE && window.top === window){
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(e => console.warn("sw", e)); });
+}
 </script>
 </body>
 </html>

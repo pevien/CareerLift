@@ -31,6 +31,13 @@ Store.sessions = [SESS2, SESS];
 window.mkIV = (o) => Object.assign({id:"live", createdAt: now, mode:"loop", rounds:["hr","sense","metrics"], idx:1, profile: clone(effectiveProfile()), followups:2, lang:"vi", style:"neutral", results:[{roundId:"hr", transcript:[], eval:EV2}],
   turns:[{role:"assistant",content:"Chào bạn, mình là Khoa, Head of Product. Giả sử bạn là PM của một app giao đồ ăn, bạn sẽ thiết kế tính năng giúp người dùng đặt lại món quen nhanh nhất như thế nào?"},{role:"user",content:"Em xin làm rõ: mục tiêu là tăng tần suất đặt hay giảm thời gian đặt? Em giả định là giảm thời gian đặt cho người đặt cơm trưa văn phòng."},{role:"assistant",content:"Đúng, mục tiêu là giảm thời gian đặt. Khi đưa mục món quen lên trang chủ, bạn chọn món hiển thị theo tiêu chí nào?"}],
   answers:1, status:"answer", stream:"", err:"", ctl:null, draft:"", qStart: now - 47e3, hint:null, hintsRound:0}, o || {});
+window.ME_SAMPLE = {raw:"Nguyễn An - Product Manager tại MoMo...".repeat(4), at: now - 40*H, sum:{headline:"Product Manager mảng thanh toán, mạnh về tối ưu funnel và làm việc với đối tác ngân hàng", years:"6 năm",
+  roles:[{title:"Product Manager", company:"MoMo", period:"2022 - nay", points:["Phụ trách luồng thanh toán hóa đơn, tăng tỉ lệ thành công từ 91% lên 96%","Dẫn dắt squad 8 người"]},{title:"Associate PM", company:"Tiki", period:"2020 - 2022", points:["Ra mắt tính năng mua lại đơn cũ, tăng 12% đơn lặp lại"]},{title:"Business Analyst", company:"FPT Software", period:"2018 - 2020", points:[]}],
+  skills:["SQL","A/B test","Thiết kế funnel","Làm việc với ngân hàng"], education:["Đại học Ngoại thương, Kinh tế đối ngoại"]}};
+window.NOW = now;
+window.STORIES = [
+  {id:"st1", title:"Cứu tỉ lệ thanh toán khi ngân hàng đối tác đổi API", tags:["failure","customer"], src:"me", created: now - 30*H, mod: now - 30*H, s:"Tháng 3/2023, một ngân hàng đối tác đổi API xác thực mà không báo trước, tỉ lệ thanh toán hóa đơn qua ngân hàng này rơi từ 95% xuống 70%.", t:"Tôi là PM phụ trách luồng thanh toán, cần khôi phục tỉ lệ thành công trong một tuần.", a:"Tôi lập war room với engineer và đội đối tác, phân loại lỗi theo bước, đề xuất tạm chuyển người dùng sang kênh thẻ nội địa và viết lại hướng dẫn trên màn hình lỗi.", r:"Sau 5 ngày tỉ lệ về lại 94%. Tôi đề xuất quy trình báo trước thay đổi API vào hợp đồng với các ngân hàng."},
+  {id:"st2", title:"Thuyết phục team rủi ro nới hạn mức cho người dùng mới", tags:["influence","conflict"], created: now - 20*H, mod: now - 20*H, s:"Hạn mức thấp khiến 30% người dùng mới bỏ dở lần nạp tiền đầu tiên.", t:"Tôi cần team rủi ro đồng ý thử nghiệm hạn mức cao hơn.", a:"Tôi gặp riêng trưởng team rủi ro để hiểu mối lo về gian lận, cùng thiết kế thử nghiệm 5% người dùng có xác thực khuôn mặt.", r:"Tỉ lệ hoàn tất nạp lần đầu tăng 18%, gian lận không đổi."}];
 window.fakeMic = (t) => { MIC = {target:t, rec:{stop(){}}}; };
 `;
 
@@ -57,6 +64,13 @@ const STATES = {
   "k18-practice-result": `openPractice("sense", questionsOf("sense")[0].id); PR.answer = "Em sẽ bắt đầu bằng việc làm rõ mục tiêu..."; PR.result = EV; render()`,
   "k19-quiz": `startLearnQuiz("ai", bankQuiz(), "bank"); QZ.answers = {0:0, 1:2}; QZ.idx = 2; QZ.start = Date.now() - 140e3; render()`,
   "k20-quiz-result": `startLearnQuiz("ai", bankQuiz(), "bank"); QZ.questions.forEach((q,i) => QZ.answers[i] = i % 3 ? q.a : (q.a + 1) % 4); submitQuiz(); render()`,
+  "k21-stories-empty": `go("stories")`,
+  "k22-stories": `S.me = ME_SAMPLE; S.stories = STORIES; SB.fb = {id:"st2", status:"done", items:["Thêm con số cụ thể về quy mô thử nghiệm và thời gian chạy.","Phần Hành động nên nói rõ bạn xử lý phản đối của team rủi ro thế nào.","Hợp với câu hỏi: thuyết phục khi không có quyền, xung đột với team khác."], improved: STORIES[1], err:""}; go("stories")`,
+  "k23-story-form": `S.stories = STORIES; SB.editing = "new"; go("stories")`,
+  "k24-stories-drafts": `S.me = ME_SAMPLE; SB.drafts = [{title:"Ra mắt tính năng mua lại đơn cũ ở Tiki", tags:["success","customer"], s:"Năm 2021, người dùng Tiki mất nhiều bước để đặt lại sản phẩm đã mua.", t:"Tôi là Associate PM, được giao tăng tỉ lệ đơn lặp lại.", a:"Tôi phân tích hành vi mua lại, phỏng vấn [điền số] người dùng, đề xuất nút Mua lại trên trang đơn hàng và chạy A/B test.", r:"Đơn lặp lại tăng 12%. [điền số liệu doanh thu nếu có]"}]; go("stories")`,
+  "k25-practice-personal-hint": `S.me = ME_SAMPLE; S.stories = STORIES; openPractice("behavioral", questionsOf("behavioral")[0].id); PR.me = {status:"done", text:"- Nên kể: lần ngân hàng đối tác đổi API ở MoMo, vì bạn phải quyết định nhanh khi chưa rõ nguyên nhân lỗi.\\n- Bối cảnh: tỉ lệ thanh toán qua ngân hàng đối tác rơi từ 95% xuống 70%.\\n- Nhiệm vụ: khôi phục tỉ lệ thành công trong một tuần.\\n- Hành động: lập war room, phân loại lỗi theo bước, tạm chuyển người dùng sang kênh thẻ nội địa.\\n- Kết quả: sau 5 ngày về lại 94%, thêm điều khoản báo trước thay đổi API.\\n- Cần bổ sung: [số người dùng bị ảnh hưởng], [dữ liệu bạn có lúc ra quyết định].", err:""}; render()`,
+  "k26-practice-compare": `openPractice("sense", questionsOf("sense")[0].id); PR.answer = "Em làm rõ mục tiêu là giảm thời gian chờ ở bệnh viện tư, chọn nhóm con cháu đặt hộ, đưa ra ba giải pháp và so sánh, đo bằng thời gian chờ trung bình và tỉ lệ huỷ lịch."; PR.result = Object.assign({}, EV, {overall:71, verdict:"pass"}); PR.prev = {d: NOW - 26*3600e3, s:58, a:"Em sẽ bắt đầu bằng việc làm rõ mục tiêu: giảm thời gian chờ hay tăng lượt đặt online. Sau đó chọn nhóm con cháu đặt hộ.", c: EV.scores.map((x, i) => [x.criterion, Math.max(1, x.score - (i % 2))])}; PR.progress = "Lần này bạn đã đưa ra ba giải pháp và có chỉ số đối trọng; phần nỗi đau người dùng vẫn còn chung chung như lần trước."; render()`,
+  "k27-topic-cards-from-interview": `S.customCards = {sense:[{id:"xa1", front:"Chỉ số đối trọng là gì?", back:"Chỉ số theo dõi để chắc rằng tối ưu chỉ số chính không làm hỏng điều khác."}]}; go("topic",{topic:"sense",tab:"cards"})`,
   // Phỏng vấn thử
   "i00-key-required": `S.settings.apiKey = ""; go("interview")`,
   "i01-setup": `go("interview")`,
@@ -74,11 +88,15 @@ const STATES = {
   "i13-final-summary": `IV = mkIV({idx:2, status:"finished", results:[{roundId:"hr", transcript:[], eval:EV2},{roundId:"sense", transcript:[], eval:EV},{roundId:"metrics", transcript:[], eval:Object.assign({}, EV, {overall:42, verdict:"fail"})}]}); go("interview")`,
   "i14-report-single-round": `go("report",{id:"r1"})`,
   "i15-report-multi-round": `go("report",{id:"r2"})`,
+  "i16-round-add-review": `IV = mkIV({status:"roundDone", results:[{roundId:"hr", transcript:[], eval:EV2},{roundId:"sense", transcript:mkIV().turns, eval:EV, hints:1}]}); go("interview"); window.scrollTo(0, 900)`,
+  "i17-round-added-review": `S.customCards = {sense:[{id:"xa1", front:"Chỉ số đối trọng là gì?", back:"..."},{id:"xa2", front:"Khi nào nên so sánh nhiều giải pháp?", back:"..."}]}; S.custom.sense = [{id:"civ1", q:"Thiết kế tính năng giúp người dùng đặt lại món quen nhanh nhất.", k:[], src:"iv"}]; IV = mkIV({status:"roundDone", results:[{roundId:"hr", transcript:[], eval:EV2},{roundId:"sense", transcript:mkIV().turns, eval:EV, hints:1}]}); S.ivAdded["live:1"] = {at: NOW, cards:2, ids:["xa1","xa2"], topic:"sense", qid:"civ1"}; go("interview")`,
   // Cài đặt
   "s01-settings": `S.settings.apiKey = ""; go("settings")`,
   "s02-settings-key-saved": `S.settings.apiKey = "AIza-demo-key"; go("settings")`,
   "s03-settings-edit-goal": `editingTarget = "general"; go("settings")`,
   "s04-settings-drive-on": `localStorage.setItem(GD_CID_LS, "1234-abc.apps.googleusercontent.com"); localStorage.setItem(GD_ON_LS, "1"); GD.last = Date.now() - 600e3; S.settings.apiKey = "AIza-demo-key"; go("settings")`,
+  "s05-settings-profile-form": `S.settings.apiKey = "AIza-demo-key"; go("settings"); document.querySelector("#me-panel details").open = true`,
+  "s06-settings-profile-summary": `S.settings.apiKey = "AIza-demo-key"; S.me = ME_SAMPLE; go("settings")`,
 };
 
 let done = false;
@@ -92,7 +110,7 @@ f.onload = () => {
     w.scrollTo(0, 0);
     const h = Math.min(Math.max(w.document.documentElement.scrollHeight, W < 600 ? 844 : 900), 3200);
     f.style.height = h + "px";
-    const empty = !w.document.querySelector("#app h1, #app h2");
+    const empty = !w.document.querySelector("#app h1, #app h2, #app .deck");
     document.title = errs.length ? "ERR " + errs.join("; ") : empty ? "ERR empty page" : "H=" + h;
   }, 400);
 };

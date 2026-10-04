@@ -4,13 +4,14 @@ Tài liệu này liệt kê mọi màn hình và trạng thái giao diện của
 
 - **Dữ liệu trong ảnh là dữ liệu mẫu.** Các trạng thái cần AI (chấm điểm, gợi ý, phân tích JD, phòng phỏng vấn, báo cáo) được giả lập nên không cần API key để tái tạo.
 - **Đường dẫn** trong cột Route là phần sau dấu `#` của URL. Mở trực tiếp đường dẫn đó sẽ vào đúng màn hình, tải lại trang vẫn giữ nguyên chỗ.
+- **Cài như app:** khi mở qua http(s), app cài được lên máy (PWA) và vẫn mở được khi mất mạng; các tính năng AI cần mạng.
 - **Thành phần dùng chung:** thanh trên cùng có logo và nút đổi ngôn ngữ EN/VI. Trên desktop, menu nằm ở thanh trên; trên mobile (dưới 720px), menu chuyển xuống đáy màn hình.
 
 ## Mục lục
 
-- [1. Kiến thức](#1-kiến-thức) (21 trạng thái)
-- [2. Phỏng vấn thử](#2-phỏng-vấn-thử) (16 trạng thái)
-- [3. Cài đặt](#3-cài-đặt) (4 trạng thái)
+- [1. Kiến thức](#1-kiến-thức) (28 trạng thái)
+- [2. Phỏng vấn thử](#2-phỏng-vấn-thử) (18 trạng thái)
+- [3. Cài đặt](#3-cài-đặt) (6 trạng thái)
 - [Chụp lại ảnh](#chụp-lại-ảnh)
 
 ---
@@ -19,9 +20,9 @@ Tài liệu này liệt kê mọi màn hình và trạng thái giao diện của
 
 | # | Màn hình | Route | Nội dung chính |
 |---|---|---|---|
-| K01 | Trang chính Kiến thức | `#/` | Card thẻ cần ôn hôm nay, card bài học tiếp theo, danh sách 6 chủ đề kèm tiến độ, nút Thêm bài học bằng AI |
+| K01 | Trang chính Kiến thức | `#/` | Card thẻ cần ôn hôm nay, card bài học tiếp theo, card câu từ phỏng vấn cần luyện lại (khi có), card Kho câu chuyện STAR, danh sách 6 chủ đề kèm tiến độ, nút Thêm bài học bằng AI |
 | K02 | Chủ đề: tab Bài học | `#/topic/{id}/lessons` | Danh sách bài (đã học có ✓, bài AI tạo có nhãn), nút Thêm bài học bằng AI |
-| K03 | Chủ đề: tab Thẻ ghi nhớ | `#/topic/{id}/cards` | Số thẻ đến hạn, nút Ôn N thẻ và Ôn lại toàn bộ, danh sách thẻ với lịch ôn |
+| K03 | Chủ đề: tab Thẻ ghi nhớ | `#/topic/{id}/cards` | Số thẻ đến hạn, nút Ôn N thẻ và Ôn lại toàn bộ, danh sách thẻ với lịch ôn; thẻ tạo từ phỏng vấn có nhãn **Từ phỏng vấn** và nút Xóa |
 | K04 | Chủ đề: tab Luyện trả lời | `#/topic/{id}/practice` | Danh sách câu hỏi kèm điểm cao nhất, nút Tạo câu hỏi mới bằng AI |
 | K04b | Luyện trả lời: chưa có API key | `#/topic/{id}/practice` | Chỉ hiện khung yêu cầu nhập Gemini API key; danh sách câu hỏi hiện sau khi lưu key. Trang luyện một câu cũng vậy |
 | K05 | Chủ đề: tab Trắc nghiệm | `#/topic/{id}/quiz` | Giới thiệu bài test, lịch sử điểm, nút làm bài và tạo đề bằng AI |
@@ -37,9 +38,16 @@ Tài liệu này liệt kê mọi màn hình và trạng thái giao diện của
 | K15 | Luyện trả lời: mở gợi ý | `#/practice/{topic}/{qid}` | Khung "Câu trả lời tốt thường có" |
 | K16 | Luyện trả lời: đang ghi âm | `#/practice/{topic}/{qid}` | Nút Dừng màu đỏ có biểu tượng hình vuông |
 | K17 | Luyện trả lời: đang chấm | `#/practice/{topic}/{qid}` | Trạng thái chờ AI chấm |
-| K18 | Luyện trả lời: kết quả | `#/practice/{topic}/{qid}` | Điểm, nhận xét theo tiêu chí, làm tốt, cần cải thiện, dàn ý tham khảo |
+| K18 | Luyện trả lời: kết quả | `#/practice/{topic}/{qid}` | Điểm, nhận xét theo tiêu chí, làm tốt, cần cải thiện, dàn ý tham khảo, nút **Trả lời lại từ đầu** |
 | K19 | Làm bài trắc nghiệm | `#/quiz/{topic}` | Đồng hồ đếm ngược, ô số câu, 4 đáp án. Nút chính là **Câu sau**; chỉ ở câu cuối hoặc khi đã trả lời hết mới thành **Nộp bài**. Nộp sớm bằng nút nhỏ cạnh đồng hồ |
 | K20 | Trắc nghiệm: kết quả | `#/quiz/{topic}` | Điểm, nhận xét theo nhóm kiến thức, xem lại đáp án kèm khung **Giải thích** cho từng câu |
+| K21 | Kho câu chuyện: trống | `#/stories` | Độ phủ 7 nhóm câu hỏi hành vi, nút Thêm câu chuyện; chưa có hồ sơ thì có lời nhắc thêm LinkedIn hoặc CV ở Cài đặt |
+| K22 | Kho câu chuyện: có câu chuyện | `#/stories` | Độ phủ, nút Tạo nháp từ LinkedIn, từng câu chuyện theo STAR với nút Sửa, AI góp ý theo STAR, Xóa; khung AI góp ý có nút Dùng bản AI đã gọt |
+| K23 | Kho câu chuyện: thêm câu chuyện | `#/stories` | Tên gợi nhớ, chọn tối đa 3 nhóm câu hỏi, 4 ô Bối cảnh, Nhiệm vụ, Hành động, Kết quả |
+| K24 | Kho câu chuyện: nháp từ LinkedIn | `#/stories` | Các nháp AI viết từ hồ sơ, chỗ thiếu để trong ngoặc vuông, nút Lưu vào kho và Bỏ |
+| K25 | Luyện trả lời: gợi ý từ kinh nghiệm | `#/practice/{topic}/{qid}` | Với câu hỏi về kinh nghiệm: khung **Gợi ý từ kinh nghiệm của bạn** gồm câu chuyện nên kể, dàn ý STAR từ hồ sơ và chỗ cần bổ sung |
+| K26 | Luyện trả lời: so với lần trước | `#/practice/{topic}/{qid}` | Khi trả lời lại: điểm lần trước và lần này, chênh lệch từng tiêu chí, nhận xét tiến bộ của AI, xem hai câu trả lời cạnh nhau |
+| K27 | Chủ đề: thẻ tạo từ phỏng vấn | `#/topic/{id}/cards` | Thẻ AI tạo từ kết quả phỏng vấn nằm cuối danh sách thẻ của chủ đề |
 
 ### K01. Trang chính Kiến thức
 | Desktop | Mobile |
@@ -146,6 +154,41 @@ Tài liệu này liệt kê mọi màn hình và trạng thái giao diện của
 |---|---|
 | <img src="screens/k20-quiz-result-desktop.png" width="640"> | <img src="screens/k20-quiz-result-mobile.png" width="240"> |
 
+### K21. Kho câu chuyện: trống
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/k21-stories-empty-desktop.png" width="640"> | <img src="screens/k21-stories-empty-mobile.png" width="240"> |
+
+### K22. Kho câu chuyện: có câu chuyện
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/k22-stories-desktop.png" width="640"> | <img src="screens/k22-stories-mobile.png" width="240"> |
+
+### K23. Kho câu chuyện: thêm câu chuyện
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/k23-story-form-desktop.png" width="640"> | <img src="screens/k23-story-form-mobile.png" width="240"> |
+
+### K24. Kho câu chuyện: nháp từ LinkedIn
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/k24-stories-drafts-desktop.png" width="640"> | <img src="screens/k24-stories-drafts-mobile.png" width="240"> |
+
+### K25. Luyện trả lời: gợi ý từ kinh nghiệm
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/k25-practice-personal-hint-desktop.png" width="640"> | <img src="screens/k25-practice-personal-hint-mobile.png" width="240"> |
+
+### K26. Luyện trả lời: so với lần trước
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/k26-practice-compare-desktop.png" width="640"> | <img src="screens/k26-practice-compare-mobile.png" width="240"> |
+
+### K27. Chủ đề: thẻ tạo từ phỏng vấn
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/k27-topic-cards-from-interview-desktop.png" width="640"> | <img src="screens/k27-topic-cards-from-interview-mobile.png" width="240"> |
+
 ---
 
 ## 2. Phỏng vấn thử
@@ -166,10 +209,12 @@ Phòng phỏng vấn dùng chung route `#/interview` với trang thiết lập: 
 | I09 | Phòng: đang chấm vòng | `#/interview` | Lời kết của người phỏng vấn và trạng thái chờ chấm |
 | I10 | Phòng: lỗi kết nối | `#/interview` | Thông báo lỗi và nút Hỏi lại |
 | I11 | Phòng: vòng Bài test AI | `#/interview` | Bài trắc nghiệm có giờ ngay trong phòng |
-| I12 | Kết quả vòng | `#/interview` | Điểm vòng, nhận xét, bản ghi, nút sang vòng sau |
+| I12 | Kết quả vòng | `#/interview` | Điểm vòng, nhận xét, bản ghi, nút sang vòng sau, khung **Thêm vào ôn tập** |
 | I13 | Tổng kết buổi | `#/interview` | Điểm chung, điểm từng vòng, chủ đề nên ôn, nút **Phỏng vấn mới** (chính) và Xem tổng kết nằm ngang tiêu đề |
 | I14 | Báo cáo: buổi một vòng | `#/report/{id}` | Kết quả vòng đầy đủ và bản ghi |
 | I15 | Báo cáo: buổi nhiều vòng | `#/report/{id}` | Phần tổng kết, sau đó là kết quả từng vòng |
+| I16 | Kết quả vòng: thêm vào ôn tập | `#/interview` | Khung **Biến vòng này thành bài ôn**: AI tạo thẻ ghi nhớ từ ý còn thiếu và đưa câu hỏi chính vào Luyện trả lời. Có cả ở trang báo cáo |
+| I17 | Kết quả vòng: đã thêm vào ôn tập | `#/interview` | Số thẻ đã tạo, nút Ôn các thẻ này và Luyện lại câu này |
 
 ### I00. Chưa có API key
 | Desktop | Mobile |
@@ -251,16 +296,28 @@ Phòng phỏng vấn dùng chung route `#/interview` với trang thiết lập: 
 |---|---|
 | <img src="screens/i15-report-multi-round-desktop.png" width="640"> | <img src="screens/i15-report-multi-round-mobile.png" width="240"> |
 
+### I16. Kết quả vòng: thêm vào ôn tập
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/i16-round-add-review-desktop.png" width="640"> | <img src="screens/i16-round-add-review-mobile.png" width="240"> |
+
+### I17. Kết quả vòng: đã thêm vào ôn tập
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/i17-round-added-review-desktop.png" width="640"> | <img src="screens/i17-round-added-review-mobile.png" width="240"> |
+
 ---
 
 ## 3. Cài đặt
 
 | # | Màn hình | Route | Nội dung chính |
 |---|---|---|---|
-| S01 | Cài đặt: chưa có key | `#/settings` | Mục tiêu học tập, form nhập Gemini API key, kết nối Google Drive, nút xóa tiến độ |
+| S01 | Cài đặt: chưa có key | `#/settings` | Mục tiêu học tập, form nhập Gemini API key, kết nối Google Drive, nút xóa tiến độ, khung Kinh nghiệm của bạn (LinkedIn, CV) |
 | S02 | Cài đặt: đã lưu key | `#/settings` | Model đang dùng và nút Xóa API key |
 | S03 | Cài đặt: sửa mục tiêu học tập | `#/settings` | Form chọn vị trí, cấp độ, loại công ty |
 | S04 | Cài đặt: đã bật Google Drive | `#/settings` | Thời điểm đồng bộ gần nhất, nút Đồng bộ ngay và Tắt đồng bộ |
+| S05 | Cài đặt: nhập hồ sơ kinh nghiệm | `#/settings` | Hướng dẫn chép hồ sơ LinkedIn, nút **Tải CV lên** (PDF, DOCX, TXT, đọc ngay trên máy), ô dán nội dung, nút Lưu và phân tích |
+| S06 | Cài đặt: đã phân tích hồ sơ | `#/settings` | Tóm tắt của AI: vai trò, số năm, các vị trí đã làm, kỹ năng; nút Sửa và Xóa |
 
 Khi app chạy bên trong Claude, khối Cài đặt AI và Google Drive được ẩn vì AI và dữ liệu do Claude cung cấp.
 
@@ -283,6 +340,16 @@ Khi app chạy bên trong Claude, khối Cài đặt AI và Google Drive đượ
 | Desktop | Mobile |
 |---|---|
 | <img src="screens/s04-settings-drive-on-desktop.png" width="640"> | <img src="screens/s04-settings-drive-on-mobile.png" width="240"> |
+
+### S05. Cài đặt: nhập hồ sơ kinh nghiệm
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/s05-settings-profile-form-desktop.png" width="640"> | <img src="screens/s05-settings-profile-form-mobile.png" width="240"> |
+
+### S06. Cài đặt: đã phân tích hồ sơ
+| Desktop | Mobile |
+|---|---|
+| <img src="screens/s06-settings-profile-summary-desktop.png" width="640"> | <img src="screens/s06-settings-profile-summary-mobile.png" width="240"> |
 
 ---
 
