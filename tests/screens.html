@@ -84,13 +84,16 @@ const STATES = {
 let done = false;
 f.onload = () => {
   if(done) return; done = true;
-  const w = f.contentWindow;
+  const w = f.contentWindow, errs = [];
+  w.addEventListener("error", e => errs.push(e.message));
+  w.addEventListener("unhandledrejection", e => errs.push(String(e.reason && e.reason.message || e.reason)));
   try{ w.eval(SEED); w.eval(STATES[STATE]); }catch(e){ document.title = "ERR " + e.message; return; }
   setTimeout(() => {
     w.scrollTo(0, 0);
     const h = Math.min(Math.max(w.document.documentElement.scrollHeight, W < 600 ? 844 : 900), 3200);
     f.style.height = h + "px";
-    document.title = "H=" + h;
+    const empty = !w.document.querySelector("#app h1, #app h2");
+    document.title = errs.length ? "ERR " + errs.join("; ") : empty ? "ERR empty page" : "H=" + h;
   }, 400);
 };
 </script>

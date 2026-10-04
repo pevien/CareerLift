@@ -87,6 +87,7 @@ main{max-width:920px;margin:0 auto;padding:28px 20px 64px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
 .label{display:block;font-weight:500;font-size:.92rem;margin-bottom:6px}
 select,input[type=text],input[type=password],textarea{width:100%;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
+select{-webkit-appearance:none;appearance:none;padding-right:40px;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238A94A6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:12px 8px}
 textarea{resize:vertical;min-height:140px;line-height:1.55}
 select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 .guide{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -102,7 +103,7 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
 .linkbtn{border:0;background:none;padding:0 2px;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}
 .ai-form{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr) auto;gap:10px}
 @media (max-width:520px){.ai-form{grid-template-columns:1fr}}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;cursor:pointer;font-size:.92rem}
 .chip[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);color:var(--blue);font-weight:500}
@@ -599,9 +600,18 @@ const COMPANIES = {
   product:"công ty công nghệ làm sản phẩm (kiểu ví điện tử, thương mại điện tử)",
   startup:"startup công nghệ giai đoạn đầu",
   fintech:"ngân hàng số hoặc fintech",
-  global:"công ty công nghệ nước ngoài có văn phòng tại Việt Nam"
+  global:"công ty công nghệ đa quốc gia"
 };
-const COMPANY_SHORT = {product:"Công ty sản phẩm", startup:"Startup", fintech:"Ngân hàng số / fintech", global:"Công ty nước ngoài"};
+// Thị trường ứng tuyển: đổi ngôn ngữ, quy trình và bối cảnh mà AI dùng để hỏi, chấm và ra đề
+const MARKETS = {
+  vn:{vi:"Việt Nam", en:"Vietnam", ctx:"Thị trường Việt Nam: phỏng vấn thường bằng tiếng Việt (công ty đa quốc gia có thể dùng tiếng Anh), quy trình khoảng 3 đến 5 vòng. Ví dụ và bối cảnh nên dùng sản phẩm, người dùng và thói quen ở Việt Nam."},
+  sg:{vi:"Singapore", en:"Singapore", ctx:"Thị trường Singapore, trung tâm khu vực Đông Nam Á: phỏng vấn bằng tiếng Anh, thường ở công ty công nghệ khu vực hoặc đa quốc gia. Hay hỏi về sản phẩm phục vụ nhiều nước Đông Nam Á cùng lúc, làm việc với các bên ở nhiều quốc gia; kỳ vọng metrics và quản lý stakeholder rõ ràng. Ví dụ nên đặt trong bối cảnh Singapore và Đông Nam Á."},
+  us:{vi:"Mỹ", en:"United States", ctx:"Thị trường Mỹ: phỏng vấn bằng tiếng Anh, quy trình có cấu trúc (recruiter screen, product sense, analytical/execution, behavioral/leadership), chấm theo rubric chặt. Câu trả lời cần cấu trúc rõ, có số liệu; vòng hành vi cần câu chuyện thể hiện ownership, leadership và tác động đo được. Ví dụ nên dùng sản phẩm và người dùng ở Mỹ."},
+  intl:{vi:"Quốc tế / remote", en:"International / remote", ctx:"Công ty quốc tế hoặc làm việc từ xa: phỏng vấn bằng tiếng Anh, đội phân tán nhiều múi giờ, coi trọng giao tiếp bằng văn bản, tự chủ và làm việc với các bên ở nhiều văn hóa. Ví dụ nên dùng sản phẩm toàn cầu."}
+};
+function marketName(k){ const m = MARKETS[k] || MARKETS.vn; return isEn() ? m.en : m.vi; }
+function marketPlace(k){ return k === "intl" ? "thị trường toàn cầu" : (MARKETS[k] || MARKETS.vn).vi; }
+const COMPANY_SHORT = {product:"Công ty sản phẩm", startup:"Startup", fintech:"Ngân hàng số / fintech", global:"Công ty đa quốc gia"};
 const STYLES = {friendly:"thân thiện, khuyến khích nhưng vẫn hỏi kỹ", neutral:"chuyên nghiệp, trung lập", tough:"khó tính, hỏi dồn, hay phản biện và thử thách giả định"};
 const STYLE_SHORT = {friendly:"Thân thiện", neutral:"Trung lập", tough:"Khó tính"};
 </script>
@@ -1282,7 +1292,7 @@ const LESSON_BY_ID = Object.fromEntries(Object.values(LESSONS).flat().map(l => [
 const LS_KEY = "pmprep:v1", LS_SESS = "pmprep:sessions:v1";
 const DAY = 86400000;
 function defaultState(){
-  return {v:1, profile:{role:"pm", level:"mid", company:"product", jd:"", lang:"vi", style:"neutral", followups:3, activeJd:"", uiLang:"vi"}, cards:{}, scores:[], custom:{}, practice:{}, lessons:{}, jds:[], customLessons:{}, settings:{apiKey:"", model:"", keyMod:0}};
+  return {v:1, profile:{role:"pm", level:"mid", company:"product", jd:"", lang:"vi", style:"neutral", followups:3, activeJd:"", uiLang:"vi", market:"vn"}, cards:{}, scores:[], custom:{}, practice:{}, lessons:{}, jds:[], customLessons:{}, settings:{apiKey:"", model:"", keyMod:0}};
 }
 function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
@@ -1294,6 +1304,7 @@ function normalize(raw){
   s.profile = Object.assign(defaultState().profile, s.profile || {});
   s.settings = Object.assign(defaultState().settings, s.settings || {});
   if(!ROLES[s.profile.role]) s.profile.role = "pm";
+  if(!MARKETS[s.profile.market]) s.profile.market = "vn";
   s.cards = s.cards || {}; s.scores = Array.isArray(s.scores) ? s.scores : []; s.custom = s.custom || {}; s.practice = s.practice || {}; s.lessons = s.lessons || {}; s.customLessons = s.customLessons || {};
   s.jds = Array.isArray(s.jds) ? s.jds : [];
   if(s.profile.jd && s.profile.jd.trim() && !s.jds.length){ const id = "jd" + Date.now().toString(36); s.jds.push({id, name:"JD đã lưu", role:s.profile.role, level:s.profile.level, company:s.profile.company, text:s.profile.jd, createdAt:Date.now(), analysis:null}); s.profile.activeJd = id; }
@@ -1552,7 +1563,7 @@ function weakestTopic(){
 }
 function profileText(p){
   p = p || learnProfile();
-  let t = "Ứng viên ứng tuyển vị trí " + ROLES[p.role].name + ", cấp " + LEVELS[p.level] + ", tại " + COMPANIES[p.company] + ".";
+  let t = "Ứng viên ứng tuyển vị trí " + ROLES[p.role].name + ", cấp " + LEVELS[p.level] + ", tại " + COMPANIES[p.company] + ".\n" + (MARKETS[p.market] || MARKETS.vn).ctx;
   if(p.jd && p.jd.trim()) t += "\nMô tả công việc (JD) ứng viên nhắm tới:\n\"\"\"\n" + p.jd.trim().slice(0, 4000) + "\n\"\"\"";
   return t;
 }
@@ -1796,15 +1807,15 @@ let editingTarget = null;
 let jdAn = {id:null, status:"idle", err:""};
 function activeJd(){ return (S.jds || []).find(j => j.id === S.profile.activeJd) || null; }
 function learnProfile(){ return Object.assign({}, S.profile, {jd: "", jdName: "", jdId: ""}); }
-function jdProfile(id){ const j = (S.jds || []).find(x => x.id === id); return j ? Object.assign({}, S.profile, {role: j.role, level: j.level, company: j.company, jd: j.text, jdName: j.name, jdId: j.id}) : learnProfile(); }
+function jdProfile(id){ const j = (S.jds || []).find(x => x.id === id); return j ? Object.assign({}, S.profile, {role: j.role, level: j.level, company: j.company, market: j.market || S.profile.market, jd: j.text, jdName: j.name, jdId: j.id}) : learnProfile(); }
 function effectiveProfile(){
   const p = S.profile, j = activeJd();
-  return j ? Object.assign({}, p, {role: j.role, level: j.level, company: j.company, jd: j.text, jdName: j.name, jdId: j.id})
+  return j ? Object.assign({}, p, {role: j.role, level: j.level, company: j.company, market: j.market || p.market, jd: j.text, jdName: j.name, jdId: j.id})
            : Object.assign({}, p, {jd: "", jdName: "", jdId: ""});
 }
-function targetRow(id, name, role, level, company, hasJd){
+function targetRow(id, name, role, level, company, hasJd, market){
   const on = (S.profile.activeJd || "") === id;
-  return `<div class="trg${on ? " on" : ""}"><button class="trg-pick" data-act="pick-target" data-id="${id}" aria-pressed="${on}"><span class="radio" aria-hidden="true"></span><span><b>${esc(name)}</b><br><span class="small muted">${esc(ROLES[role].name)}, ${esc(LEVELS[level])}, ${esc(COMPANY_SHORT[company])}${hasJd ? "" : ", theo mục tiêu học tập"}</span></span></button>
+  return `<div class="trg${on ? " on" : ""}"><button class="trg-pick" data-act="pick-target" data-id="${id}" aria-pressed="${on}"><span class="radio" aria-hidden="true"></span><span><b>${esc(name)}</b><br><span class="small muted">${esc(ROLES[role].name)}, ${esc(LEVELS[level])}, ${esc(COMPANY_SHORT[company])}, ${esc(marketName(market))}${hasJd ? "" : ", theo mục tiêu học tập"}</span></span></button>
     ${id ? `<span class="row trg-act"><button class="btn ghost" data-act="edit-target" data-id="${id}">Sửa</button><button class="btn ghost danger" data-act="del-jd" data-id="${id}">Xóa</button></span>` : ""}</div>`;
 }
 function homeTargetHtml(){
@@ -1812,8 +1823,9 @@ function homeTargetHtml(){
   if(editingTarget === "general") return `<section class="panel stack"><h2>Mục tiêu học tập</h2>${targetForm("general")}</section>`;
   return `<section class="panel stack">
     <div class="row"><h2>Mục tiêu học tập</h2><span class="spacer"></span><button class="btn ghost" data-act="edit-target" data-id="general">Sửa</button></div>
-    <div class="profile-sum muted small"><span>${esc(ROLES[p.role].name)}</span><span>${esc(LEVELS[p.level])}</span><span>${esc(COMPANY_SHORT[p.company])}</span></div>
+    <div class="profile-sum muted small"><span>${esc(ROLES[p.role].name)}</span><span>${esc(LEVELS[p.level])}</span><span>${esc(COMPANY_SHORT[p.company])}</span><span>${esc(marketName(p.market))}</span></div>
     <p class="small muted">Bài học, thẻ, luyện trả lời và trắc nghiệm dùng chung mục tiêu này để ra đề và chấm đúng cấp độ. JD của từng công ty được dùng riêng trong Phỏng vấn thử.</p>
+    <p class="small muted">Thị trường quyết định ngôn ngữ, quy trình và bối cảnh mà AI dùng khi phỏng vấn, chấm điểm, ra đề và viết bài. Bài học, thẻ và câu hỏi có sẵn được viết theo bối cảnh Việt Nam.</p>
   </section>`;
 }
 function targetsPanel(){
@@ -1823,20 +1835,21 @@ function targetsPanel(){
   return `<section class="panel stack" id="targets">
     <div class="row"><h2>Ứng tuyển vào đâu?</h2><span class="spacer"></span><button class="btn" data-act="edit-target" data-id="new">Thêm JD</button></div>
     <p class="small muted">Lưu JD của từng công ty bạn đang ứng tuyển và chọn một cái trước khi vào phòng. Người phỏng vấn sẽ đóng vai người của công ty đó và hỏi bám sát JD.</p>
-    <div class="trgs">${targetRow("", "Không theo JD cụ thể", p.role, p.level, p.company, false)}${S.jds.map(x => targetRow(x.id, x.name, x.role, x.level, x.company, true)).join("")}</div>
+    <div class="trgs">${targetRow("", "Không theo JD cụ thể", p.role, p.level, p.company, false, p.market)}${S.jds.map(x => targetRow(x.id, x.name, x.role, x.level, x.company, true, x.market || p.market)).join("")}</div>
     ${j ? jdAnalysisHtml(j) : ""}
   </section>`;
 }
 function targetForm(id){
   const isGeneral = id === "general";
   const j = isGeneral || id === "new" ? null : S.jds.find(x => x.id === id);
-  const src = isGeneral ? S.profile : (j || {role: S.profile.role, level: S.profile.level, company: S.profile.company, name: "", text: ""});
+  const src = isGeneral ? S.profile : (j || {role: S.profile.role, level: S.profile.level, company: S.profile.company, market: S.profile.market, name: "", text: ""});
   const opt = (obj, val, lab) => Object.entries(obj).map(([k,v]) => `<option value="${k}"${k === val ? " selected" : ""}>${esc(lab ? lab(k,v) : v)}</option>`).join("");
   return `${isGeneral ? `<p class="small muted">Dùng khi bạn chưa nhắm JD cụ thể nào.</p>` : `<label><span class="label">Tên gợi nhớ</span><input type="text" id="tf-name" placeholder="Ví dụ: Ví điện tử X, AI Product Manager" value="${esc(src.name)}"></label>`}
   <div class="grid2">
     <label><span class="label">Vị trí</span><select id="tf-role">${opt(ROLES, src.role, (k,v) => v.name)}</select></label>
     <label><span class="label">Cấp độ</span><select id="tf-level">${opt(LEVELS, src.level)}</select></label>
     <label><span class="label">Loại công ty</span><select id="tf-company">${opt(COMPANY_SHORT, src.company)}</select></label>
+    <label><span class="label">Thị trường</span><select id="tf-market">${opt(MARKETS, src.market || S.profile.market, k => marketName(k))}</select></label>
   </div>
   ${isGeneral ? "" : `<label><span class="label">Nội dung JD</span><textarea id="tf-text" style="min-height:220px" placeholder="Dán toàn bộ mô tả công việc">${esc(src.text)}</textarea></label>`}
   <p class="note err" id="tf-err" style="display:none"></p>
@@ -1866,6 +1879,7 @@ async function analyzeJd(id){
     const sample = await needSample();
     const prompt = `Bạn là chuyên gia tuyển dụng product ở công ty công nghệ. Hãy phân tích JD dưới đây để giúp ứng viên chuẩn bị phỏng vấn.
 Vị trí ứng tuyển: ${ROLES[j.role].name}, cấp ${LEVELS[j.level]}, tại ${COMPANIES[j.company]}.
+${(MARKETS[j.market || S.profile.market] || MARKETS.vn).ctx} Quy trình phỏng vấn và câu hỏi dễ gặp phải phù hợp với thị trường này.
 JD:
 """
 ${j.text.slice(0, 8000)}
@@ -1904,7 +1918,7 @@ function vLearn(){
   return `<div class="stack" style="--gap:28px">
   <section class="hero">
     <h1>Hôm nay ôn gì?</h1>
-    <p class="muted">Đang ôn cho vị trí ${esc(ROLES[p.role].name)} ${esc(LEVELS[p.level])}, ${esc(COMPANY_SHORT[p.company].toLowerCase())}.</p>
+    <p class="muted">Đang ôn cho vị trí ${esc(ROLES[p.role].name)} ${esc(LEVELS[p.level])}, ${esc(COMPANY_SHORT[p.company].toLowerCase())}, ${esc(marketName(p.market))}.</p>
   </section>
   <div class="today compact">
     <button class="today-item yellow" data-act="review-due"><span class="big">${due}</span><span>${due ? "thẻ cần ôn hôm nay" : "thẻ đến hạn. Ôn lại toàn bộ cho chắc?"}</span></button>
@@ -2074,7 +2088,7 @@ async function genQuestion(topic){
 ${profileText()}
 Không trùng ý với các câu đã có:
 ${questionsOf(topic).map(q => "- " + q.q).join("\n")}
-Câu hỏi phải thực tế, cụ thể, có bối cảnh rõ (ưu tiên bám JD nếu có, hoặc sản phẩm quen thuộc ở Việt Nam), đúng độ khó của cấp ${LEVELS[S.profile.level]}. Viết bằng tiếng Việt.
+Câu hỏi phải thực tế, cụ thể, có bối cảnh rõ (ưu tiên bám JD nếu có, hoặc sản phẩm quen thuộc ở ${marketPlace(S.profile.market)}), đúng độ khó của cấp ${LEVELS[S.profile.level]}. Viết bằng tiếng Việt.
 Chỉ trả về JSON: {"q":"câu hỏi","k":["3 đến 5 ý chính một câu trả lời tốt nên có"]}`;
     const o = await sample.json(prompt, {cache:false});
     if(!o || !o.q) throw {code:"invalid_json"};
@@ -2162,7 +2176,7 @@ async function genLesson(){
 ${topicLine}
 Các bài đã có (tránh trùng lặp nội dung):
 ${existing}
-Yêu cầu nội dung: thực tế, chính xác, hữu ích cho phỏng vấn; ví dụ ưu tiên sản phẩm quen thuộc ở Việt Nam; không bịa số liệu thống kê thật, nếu cần số liệu thì ghi rõ là giả định; không nêu tên model AI hay giá cụ thể có thể lỗi thời.
+Yêu cầu nội dung: thực tế, chính xác, hữu ích cho phỏng vấn; ví dụ ưu tiên sản phẩm quen thuộc ở ${marketPlace(S.profile.market)}; không bịa số liệu thống kê thật, nếu cần số liệu thì ghi rõ là giả định; không nêu tên model AI hay giá cụ thể có thể lỗi thời.
 Cấu trúc: trường b là mảng các khối, mỗi khối là mảng 2 phần tử, chỉ dùng các loại:
 ["p","đoạn văn"], ["h","tiêu đề mục"], ["ul",["ý", "..."]], ["ol",["bước", "..."]], ["ex","ví dụ, có thể nhiều dòng"], ["warn",["lỗi hay gặp", "..."]], ["q",["câu hỏi phỏng vấn liên quan", "..."]].
 Nên có: một đoạn mở đầu, 2 đến 3 mục có tiêu đề, ít nhất một ví dụ, một khối warn và một khối q. Trong ul và ol có thể viết dạng "Thuật ngữ: giải thích". Không dùng markdown trong chuỗi.
@@ -2217,7 +2231,7 @@ function lessonPlain(l){
   return l.b.map(([k, v]) => Array.isArray(v) ? v.map(x => "- " + x).join("\n") : (k === "h" ? "## " : "") + v).join("\n");
 }
 let LA = {id:null, q:"", text:"", status:"idle", err:""};
-const ASK_CHIPS = ["Cho mình thêm một ví dụ với sản phẩm quen thuộc ở Việt Nam","Người phỏng vấn sẽ hỏi vặn phần này thế nào?","Giải thích lại ngắn gọn hơn","Áp dụng vào JD mình đang nhắm thế nào?"];
+const ASK_CHIPS = ["Cho mình thêm một ví dụ với sản phẩm quen thuộc ở thị trường mình ứng tuyển","Người phỏng vấn sẽ hỏi vặn phần này thế nào?","Giải thích lại ngắn gọn hơn","Áp dụng vào JD mình đang nhắm thế nào?"];
 function lessonsTab(t){
   return `<p class="muted">Đọc bài trước, rồi ôn thẻ, luyện trả lời và làm trắc nghiệm để chắc kiến thức.</p>
   <ol class="llist">${lessonsOf(t.id).map((l, i) => `<li><button class="lrow" data-act="open-lesson" data-id="${l.id}"><span class="lnum${lessonDone(l.id) ? " done" : ""}" aria-hidden="true">${lessonDone(l.id) ? "✓" : i + 1}</span><span><span class="ltitle">${esc(l.t)}</span>${l.ai ? ` <span class="tag ai">AI tạo</span>` : ""}<br><span class="small muted">${l.m} phút đọc${lessonDone(l.id) ? ", đã học" : ""}</span></span></button></li>`).join("")}</ol>
@@ -2449,7 +2463,7 @@ function vSetup(){
   <p class="muted">AI đóng vai người phỏng vấn, hỏi một câu chính rồi hỏi vặn dựa trên câu trả lời của bạn. Cuối mỗi vòng có báo cáo chấm điểm theo tiêu chí.</p></div>
   ${needKey() ? keyGate("Phỏng vấn thử dùng AI để đóng vai người phỏng vấn và chấm điểm. Nhập Gemini API key rồi bấm Lưu để thiết lập buổi phỏng vấn.") : `${targetsPanel()}
   <div class="panel stack" style="--gap:22px" id="iv-setup"><h2>Thiết lập buổi phỏng vấn</h2>
-    ${aj ? `<p class="small">Đang giả lập cho <b>${esc(aj.name)}</b>: ${esc(ROLES[p.role].name)}, ${esc(LEVELS[p.level])}, ${esc(COMPANY_SHORT[p.company])}.</p>` : `<p class="small muted">Chưa chọn JD: phỏng vấn theo mục tiêu học tập (${esc(ROLES[p.role].name)}, ${esc(LEVELS[p.level])}).</p>`}
+    ${aj ? `<p class="small">Đang giả lập cho <b>${esc(aj.name)}</b>: ${esc(ROLES[p.role].name)}, ${esc(LEVELS[p.level])}, ${esc(COMPANY_SHORT[p.company])}, ${esc(marketName(p.market))}.</p>` : `<p class="small muted">Chưa chọn JD: phỏng vấn theo mục tiêu học tập (${esc(ROLES[p.role].name)}, ${esc(LEVELS[p.level])}).</p>`}
     <div><span class="label">Hình thức</span><div class="chips">${chip("su-mode","single",SU.mode === "single","Một vòng")}${chip("su-mode","loop",SU.mode === "loop","Trọn quy trình tuyển dụng")}</div></div>
     ${SU.mode === "single"
       ? `<div><span class="label">Vòng</span><div class="chips">${ROUND_ORDER.map(r => chip("su-single", r, SU.single === r, ROUNDS[r].name)).join("")}</div></div>`
@@ -2483,7 +2497,7 @@ ${profileText(IV.profile)}
 ${IV.profile.jd ? "Bám sát JD: ưu tiên hỏi về sản phẩm, ngành, trách nhiệm và kỹ năng nêu trong JD; nếu JD có tên công ty thì đóng vai người của chính công ty đó." : ""}
 Phong cách của bạn: ${STYLES[IV.style]}.
 Mục tiêu vòng này: ${r.brief}
-Một vài đề tham khảo (được chọn, biến tấu, hoặc tự ra đề khác phù hợp hơn với JD và loại công ty; ưu tiên bối cảnh quen thuộc ở Việt Nam):
+Một vài đề tham khảo (được chọn, biến tấu, hoặc tự ra đề khác phù hợp hơn với JD, loại công ty và thị trường; ưu tiên bối cảnh quen thuộc ở ${marketPlace(IV.profile.market)}):
 ${questionsOf(r.topic).map(q => "- " + q.q).join("\n")}
 Quy tắc:
 - Chỉ nói lời của người phỏng vấn, tự nhiên như nói chuyện thật, tối đa 4 câu. Không markdown, không gạch đầu dòng, không ghi tên mình ở đầu.
@@ -2583,7 +2597,7 @@ ${JSON_SHAPE}`;
   if(view.name === "interview"){ render(); window.scrollTo(0, 0); }
 }
 function sessionFromIV(){
-  return {id: IV.id, createdAt: IV.createdAt, jdId: IV.profile.jdId || "", jdName: IV.profile.jdName || "", role: IV.profile.role, level: IV.profile.level, company: IV.profile.company, mode: IV.mode, lang: IV.lang, rounds: IV.rounds.slice(), results: clone(IV.results)};
+  return {id: IV.id, createdAt: IV.createdAt, jdId: IV.profile.jdId || "", jdName: IV.profile.jdName || "", role: IV.profile.role, level: IV.profile.level, company: IV.profile.company, market: IV.profile.market, mode: IV.mode, lang: IV.lang, rounds: IV.rounds.slice(), results: clone(IV.results)};
 }
 function scrollBottom(){ requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight)); }
 function vRoom(){
@@ -2647,7 +2661,7 @@ function sessionSummary(s, report, actions){
   const weak = [...new Set(s.results.flatMap(x => x.eval.weakTopics))];
   const single = s.rounds.length === 1;
   const head = `<div class="page-head"><div class="stack" style="--gap:6px"><h1>${single && report ? "Kết quả vòng " + esc(ROUNDS[s.rounds[0]].name) : "Tổng kết buổi phỏng vấn"}</h1>
-  <p class="muted small">${s.jdName ? "JD " + esc(s.jdName) + ". " : ""}${esc(ROLES[s.role] ? ROLES[s.role].name : "")}, ${esc(LEVELS[s.level] || "")}, ${esc(COMPANY_SHORT[s.company] || "")}. ${fmtDate(s.createdAt)}</p></div>${actions ? `<div class="row page-actions">${actions}</div>` : ""}</div>`;
+  <p class="muted small">${s.jdName ? "JD " + esc(s.jdName) + ". " : ""}${esc(ROLES[s.role] ? ROLES[s.role].name : "")}, ${esc(LEVELS[s.level] || "")}, ${esc(COMPANY_SHORT[s.company] || "")}${s.market ? ", " + esc(marketName(s.market)) : ""}. ${fmtDate(s.createdAt)}</p></div>${actions ? `<div class="row page-actions">${actions}</div>` : ""}</div>`;
   if(single && report) return head;
   return `${head}
   <div class="verdict" style="--vbg:${fv.bg};--vc:${fv.c}"><span class="num">${ov}<small>/100</small></span><span class="vbody"><span class="vt">${fv.t}</span><span class="vsum">${fv.d}</span></span></div>
@@ -2712,13 +2726,14 @@ document.addEventListener("click", e => {
     }
     case "save-target": {
       const val = id => ((document.getElementById(id) || {}).value || "");
-      const role = val("tf-role"), level = val("tf-level"), company = val("tf-company");
-      if(d.id === "general"){ Object.assign(S.profile, {role, level, company}); }
+      const role = val("tf-role"), level = val("tf-level"), company = val("tf-company"), market = MARKETS[val("tf-market")] ? val("tf-market") : "vn";
+      // Đổi thị trường thì đổi luôn ngôn ngữ phỏng vấn mặc định; người dùng vẫn chỉnh lại được ở trang thiết lập
+      if(d.id === "general"){ if(market !== S.profile.market) S.profile.lang = market === "vn" ? "vi" : "en"; Object.assign(S.profile, {role, level, company, market}); }
       else {
         const text = val("tf-text").trim(), name = val("tf-name").trim() || ("JD " + (S.jds.length + 1));
         if(text.length < 40){ const er = document.getElementById("tf-err"); if(er){ er.textContent = tr("Dán nội dung JD (ít nhất vài dòng) trước khi lưu."); er.style.display = "block"; } break; }
-        if(d.id === "new"){ const j = {id: "jd" + uid(), name, role, level, company, text, createdAt: Date.now(), analysis: null}; S.jds.push(j); S.profile.activeJd = j.id; }
-        else { const j = S.jds.find(x => x.id === d.id); if(j){ if(j.text !== text || j.role !== role || j.level !== level || j.company !== company) j.analysis = null; Object.assign(j, {name, role, level, company, text}); } }
+        if(d.id === "new"){ const j = {id: "jd" + uid(), name, role, level, company, market, text, createdAt: Date.now(), analysis: null}; S.jds.push(j); S.profile.activeJd = j.id; }
+        else { const j = S.jds.find(x => x.id === d.id); if(j){ if(j.text !== text || j.role !== role || j.level !== level || j.company !== company || (j.market || S.profile.market) !== market) j.analysis = null; Object.assign(j, {market, name, role, level, company, text}); } }
       }
       editingTarget = null; SU.loop = null; save(); render(); break;
     }
@@ -3069,8 +3084,8 @@ const DATA_EN = {
     behavioral:{name:"Behavioral & culture", title:"VP Product", brief:"Behavioral questions in STAR format: conflict, failure, influence, decision-making. Probe for specifics about the candidate's own actions and results."},
     aitest:{name:"AI test", title:"Online test", brief:""}
   },
-  companies: {product:"a tech product company (e.g. e-wallet, e-commerce)", startup:"an early-stage tech startup", fintech:"a digital bank or fintech", global:"a foreign tech company with an office in Vietnam"},
-  companyShort: {product:"Product company", startup:"Startup", fintech:"Digital bank / fintech", global:"Foreign tech company"},
+  companies: {product:"a tech product company (e.g. e-wallet, e-commerce)", startup:"an early-stage tech startup", fintech:"a digital bank or fintech", global:"a multinational tech company"},
+  companyShort: {product:"Product company", startup:"Startup", fintech:"Digital bank / fintech", global:"Multinational company"},
   styles: {friendly:"friendly and encouraging, but still thorough", neutral:"professional and neutral", tough:"tough, rapid-fire, often challenging assumptions"},
   styleShort: {friendly:"Friendly", neutral:"Neutral", tough:"Tough"},
   quizCats: {llm:"LLM fundamentals", eval:"Quality evaluation", design:"AI product design", cost:"Cost & operations", safety:"Safety & data", use:"Using AI at work"},
@@ -3945,6 +3960,9 @@ const I18N_DICT = {
   "Chuyển sang tiếng Việt":"Chuyển sang tiếng Việt"
 };
 Object.assign(I18N_DICT, {
+  "Thị trường":"Market", "Công ty đa quốc gia":"Multinational company",
+  "Thị trường quyết định ngôn ngữ, quy trình và bối cảnh mà AI dùng khi phỏng vấn, chấm điểm, ra đề và viết bài. Bài học, thẻ và câu hỏi có sẵn được viết theo bối cảnh Việt Nam.":"The market sets the language, interview process and context the AI uses when interviewing, grading, generating questions and writing lessons. Built-in lessons, cards and questions are written for the Vietnam context.",
+  "Cho mình thêm một ví dụ với sản phẩm quen thuộc ở thị trường mình ứng tuyển":"Give me another example with a product familiar in the market I'm applying to",
   "Cần Gemini API key để bắt đầu":"A Gemini API key is needed to start",
   "Luyện trả lời dùng AI để chấm câu trả lời của bạn theo tiêu chí. Nhập Gemini API key rồi bấm Lưu để bắt đầu luyện.":"Practice uses AI to grade your answers against criteria. Enter a Gemini API key and click Save to start practicing.",
   "Phỏng vấn thử dùng AI để đóng vai người phỏng vấn và chấm điểm. Nhập Gemini API key rồi bấm Lưu để thiết lập buổi phỏng vấn.":"Mock interviews use AI to play the interviewer and grade you. Enter a Gemini API key and click Save to set up your interview.",
